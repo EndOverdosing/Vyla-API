@@ -55,6 +55,17 @@ The API will run at `http://localhost:3000`. Open `public/index.html` in a brows
 
 ## API Endpoints Overview
 
+| Endpoint                                           | Method | Description                                                                      | Required Parameters |
+| -------------------------------------------------- | ------ | -------------------------------------------------------------------------------- | ------------------ |
+| `/api/home`                                        | GET    | Curated home sections (Trending, Top Rated, Genres, Netflix Originals, etc.)     | None |
+| `/api/search`                                      | GET    | Search movies or TV shows                                                        | `q` (search query) |
+| `/api/details/{type}/{id}`                         | GET    | Media details with cast, crew, recommendations, and trailer (type: 'movie' or 'tv') | `type`, `id` |
+| `/api/cast/{id}`                                   | GET    | Cast/actor details including known-for movies and shows                          | `id` |
+| `/api/player/movie/{id}`                           | GET    | Streaming sources for a movie                                                    | `id` |
+| `/api/player/tv/{id}`                              | GET    | Streaming sources for a TV episode                                               | `id`, `s` (season), `e` (episode) |
+| `/api/image/{size}/{file}`                         | GET    | TMDB image proxy with resizing and fallback                                      | `size`, `file` |
+| `/api/list`                                        | GET    | Fetch a custom list from TMDB                                                    | `endpoint` (TMDB API path) |
+
 | Endpoint                                           | Method | Description                                                                      |
 | -------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
 | `/api/home`                                        | GET    | Curated home sections (Trending, Top Rated, Genres, Netflix Originals, etc.)     |
@@ -64,11 +75,13 @@ The API will run at `http://localhost:3000`. Open `public/index.html` in a brows
 | `/api/player/movie/{id}`                           | GET    | Streaming sources for a movie                                                    |
 | `/api/player/tv/{id}?s={season}&e={episode}`       | GET    | Streaming sources for a TV episode                                               |
 | `/api/image/{size}/{file}`                         | GET    | TMDB image proxy with resizing and fallback                                      |
-| `/api/list?endpoint={tmdb_endpoint}&params={JSON}` | GET    | Fetch a custom list from TMDB (e.g., top-rated, popular)                         |
+| `/api/list?endpoint={tmdb_endpoint}&params={JSON}` | GET    | Fetch a custom list from TMDB (e.g., `/movie/top_rated`, `/tv/popular`, `/collection/{id}`) |
 
 ---
 
 ## Example Usage
+
+**Note:** All endpoints require a valid TMDB API key to be set in the `.env` file as `TMDB_API_KEY`.
 
 **Fetch home data:**
 
@@ -113,8 +126,23 @@ curl "http://localhost:3000/api/player/tv/1668?s=1&e=1"
 **Fetch a custom TMDB list:**
 
 ```bash
+# Get top rated movies
 curl "http://localhost:3000/api/list?endpoint=/movie/top_rated"
+
+# Get popular TV shows
+curl "http://localhost:3000/api/list?endpoint=/tv/popular"
+
+# Get a specific collection (requires collection ID)
+curl "http://localhost:3000/api/list?endpoint=/collection/86311"
+
+# With pagination
+curl "http://localhost:3000/api/list?endpoint=/movie/now_playing&page=2"
+
+# With additional parameters (URL-encoded JSON)
+curl "http://localhost:3000/api/list?endpoint=/discover/movie¶ms=%7B%22with_genres%22:28,%22sort_by%22:%22popularity.desc%22%7D"
 ```
+
+**Note:** The `endpoint` parameter should be a valid TMDB API endpoint path (without the base URL). For collections, use the format `/collection/{collection_id}`.
 
 ---
 
