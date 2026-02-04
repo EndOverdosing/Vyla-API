@@ -1,7 +1,11 @@
 const { fetchFromTMDB } = require('../services/tmdb');
-const { generateProxyUrl } = require('../utils/urlHelper');
+const { getImageUrl } = require('../utils/urlHelper');
 
-const createMeta = (type, details) => ({
+const debug = (message, data = '') => {
+    const timestamp = new Date().toISOString();
+};
+
+const createMeta = (req, type, details) => ({
     pagination: {
         page: 1,
         total_pages: 1,
@@ -16,26 +20,71 @@ const createMeta = (type, details) => ({
     type: type,
     title: details.title || details.name,
     description: details.overview,
-    image: generateProxyUrl({}, details.backdrop_path || details.poster_path, 'original'),
+    image: getImageUrl(details.backdrop_path || details.poster_path, 'original'),
     timestamp: new Date().toISOString()
 });
 
 exports.getDetails = async (req, res) => {
     const { type, id } = req.params;
 
+    debug('Received request for details', { type, id, url: req.originalUrl });
+
+    if (!['movie', 'tv'].includes(type)) {
+        debug('Invalid media type requested', type);
+        return res.status(400).json({
+            error: 'Invalid media type. Must be either "movie" or "tv"',
+            received: type
+        });
+    }
+
+    if (!id || isNaN(Number(id))) {
+        debug('Invalid ID provided', id);
+        return res.status(400).json({
+            error: 'Invalid ID. Must be a number',
+            received: id
+        });
+    }
+
     try {
-        const [details, credits, recommendations, videos] = await Promise.all([
-            fetchFromTMDB(`/${type}/${id}`),
-            fetchFromTMDB(`/${type}/${id}/credits`),
-            fetchFromTMDB(`/${type}/${id}/recommendations`),
-            fetchFromTMDB(`/${type}/${id}/videos`)
-        ]);
+        debug('Fetching data from TMDB API');
+        const endpoints = [
+            `/${type}/${id}`,
+            `/${type}/${id}/credits`,
+            `/${type}/${id}/recommendations`,
+            `/${type}/${id}/videos`
+        ];
+
+        debug('TMDB API endpoints', endpoints);
+
+        const [details, credits, recommendations, videos] = await Promise.all(
+            endpoints.map(endpoint => {
+                debug(`Fetching from TMDB: ${endpoint}`);
+                return fetchFromTMDB(endpoint).catch(error => {
+                    debug(`Error fetching ${endpoint}`, error.message);
+                    throw error;
+                });
+            })
+        );
+
+        debug('Successfully fetched data from TMDB', {
+            hasDetails: !!details,
+            hasCredits: !!credits,
+            hasRecommendations: !!recommendations,
+            hasVideos: !!videos
+        });
 
         const trailer = videos.results.find(v => v.type === "Trailer" && v.site === "YouTube");
         const backdrop = details.backdrop_path || details.poster_path;
 
+        if (!details) {
+            debug('No details found for the requested media');
+            return res.status(404).json({ error: 'No details found for the requested media' });
+        }
+
+        debug('Processing response data');
         const responseData = {
-            meta: createMeta(type, details),
+            view_path: `/api/details/${type}/${id}`,
+            meta: createMeta(req, type, details),
             info: {
                 id: details.id,
                 type: type,
@@ -47,8 +96,8 @@ exports.getDetails = async (req, res) => {
                 rating: details.vote_average ? Math.round(details.vote_average * 10) / 10 : null,
                 vote_count: details.vote_count || 0,
                 genres: details.genres || [],
-                backdrop: generateProxyUrl(req, backdrop, 'original'),
-                poster: generateProxyUrl(req, details.poster_path, 'w780'),
+                backdrop: getImageUrl(backdrop, 'original'),
+                poster: getImageUrl(details.poster_path, 'w780'),
                 trailer_url: trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null,
                 homepage: details.homepage || null,
                 status: details.status || null,
@@ -57,7 +106,7 @@ exports.getDetails = async (req, res) => {
                     id: company.id,
                     name: company.name,
                     logo_path: company.logo_path
-                        ? generateProxyUrl(req, company.logo_path, 'w500')
+                        ? getImageUrl(company.logo_path, 'w500')
                         : null,
                     origin_country: company.origin_country
                 }))
@@ -67,7 +116,7 @@ exports.getDetails = async (req, res) => {
                 name: person.name,
                 character: person.character || 'Unknown',
                 profile: person.profile_path
-                    ? generateProxyUrl(req, person.profile_path, 'w185')
+                    ? getImageUrl(person.profile_path, 'w185')
                     : '/images/default-avatar.png',
                 view_cast_link: `/api/cast/${person.id}`,
                 order: person.order
@@ -77,10 +126,10 @@ exports.getDetails = async (req, res) => {
                 type: rec.media_type || type,
                 title: rec.title || rec.name || 'Untitled',
                 poster: rec.poster_path
-                    ? generateProxyUrl(req, rec.poster_path, 'w342')
+                    ? getImageUrl(rec.poster_path, 'w342')
                     : null,
                 backdrop: rec.backdrop_path
-                    ? generateProxyUrl(req, rec.backdrop_path, 'w780')
+                    ? getImageUrl(rec.backdrop_path, 'w780')
                     : null,
                 year: (rec.release_date || rec.first_air_date || '').split('-')[0] || null,
                 rating: rec.vote_average ? Math.round(rec.vote_average * 10) / 10 : null,
@@ -97,8 +146,8 @@ exports.getDetails = async (req, res) => {
                     episode_count: s.episode_count || 0,
                     air_date: s.air_date || null,
                     poster: s.poster_path
-                        ? generateProxyUrl(req, s.poster_path, 'w780')
-                        : generateProxyUrl(req, details.poster_path, 'w780'),
+                        ? getImageUrl(s.poster_path, 'w780')
+                        : getImageUrl(details.poster_path, 'w780'),
                     overview: s.overview || 'No overview available.'
                 }))
                 .sort((a, b) => a.number - b.number);
@@ -106,8 +155,31 @@ exports.getDetails = async (req, res) => {
 
         responseData.player_link = `/api/player/${type}/${id}`;
 
+        debug('Sending response data');
         res.json(responseData);
     } catch (error) {
-        res.status(500).json({ error: "Failed to load details" });
+        console.error('Error in getDetails:', error);
+        debug('Error details', {
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+
+        const statusCode = error.response?.status || 500;
+        const errorMessage = error.response?.data?.status_message || 'Failed to fetch details';
+
+        res.status(statusCode).json({
+            error: errorMessage,
+            request: {
+                type,
+                id,
+                timestamp: new Date().toISOString()
+            },
+            ...(process.env.NODE_ENV === 'development' && {
+                debug: {
+                    message: error.message,
+                    stack: error.stack
+                }
+            })
+        });
     }
 };

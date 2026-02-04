@@ -1,54 +1,54 @@
-const axios = require('axios');
 require('dotenv').config();
+const axios = require('axios');
+const { getImageUrl } = require('../utils/urlHelper');
 
-const tmdbClient = axios.create({
-    baseURL: 'https://api.themoviedb.org/3',
+const TMDB_API_KEY = process.env.TMDB_API_KEY;
+const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+
+const tmdb = axios.create({
+    baseURL: TMDB_BASE_URL,
     params: {
-        language: 'en-US',
-        api_key: process.env.TMDB_ACCESS_TOKEN
+        api_key: TMDB_API_KEY,
+        language: 'en-US'
     }
 });
 
-const fetchFromTMDB = async (endpoint, params = {}) => {
+async function fetchFromTMDB(endpoint, params = {}) {
     try {
-        const response = await tmdbClient.get(endpoint, {
-            params: {
-                ...tmdbClient.defaults.params,
-                ...params
-            },
-            validateStatus: false
-        });
-
-        if (response.status === 200) {
-            return response.data;
-        }
-
-        console.error(`TMDB API Error (${endpoint}):`, {
-            status: response.status,
-            statusText: response.statusText,
-            params,
-            data: response.data
-        });
-
-        if (endpoint.includes('/trending') || endpoint.includes('/discover')) {
-            return { results: [] };
-        }
-        if (endpoint.includes('/movie/') || endpoint.includes('/tv/')) {
-            return {};
-        }
-        return null;
+        const response = await tmdb.get(endpoint, { params });
+        return response.data;
     } catch (error) {
-        console.error('TMDB Request Failed:', {
-            endpoint,
-            params,
-            error: error.message
-        });
-
-        if (endpoint.includes('/trending') || endpoint.includes('/discover')) {
-            return { results: [] };
-        }
-        return null;
+        console.error(`[TMDB API Error] ${endpoint}:`, error.message);
+        throw error;
     }
-};
+}
 
-module.exports = { fetchFromTMDB };
+async function getTrending(mediaType = 'all', timeWindow = 'day') {
+    return fetchFromTMDB(`/trending/${mediaType}/${timeWindow}`);
+}
+
+async function getTopRated(mediaType = 'movie') {
+    return fetchFromTMDB(`/${mediaType}/top_rated`);
+}
+
+async function getNetflixOriginals() {
+    return fetchFromTMDB('/discover/tv', {
+        with_networks: 213,
+        language: 'en-US'
+    });
+}
+
+async function getMoviesByGenre(genreId) {
+    return fetchFromTMDB('/discover/movie', {
+        with_genres: genreId,
+        sort_by: 'popularity.desc'
+    });
+}
+
+module.exports = {
+    fetchFromTMDB,
+    getTrending,
+    getTopRated,
+    getNetflixOriginals,
+    getMoviesByGenre
+};
