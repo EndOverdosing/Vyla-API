@@ -12,10 +12,41 @@ const tmdbClient = axios.create({
 const fetchFromTMDB = async (endpoint, params = {}) => {
     try {
         const response = await tmdbClient.get(endpoint, {
-            params: { ...tmdbClient.defaults.params, ...params }
+            params: {
+                ...tmdbClient.defaults.params,
+                ...params
+            },
+            validateStatus: false
         });
-        return response.data;
+
+        if (response.status === 200) {
+            return response.data;
+        }
+
+        console.error(`TMDB API Error (${endpoint}):`, {
+            status: response.status,
+            statusText: response.statusText,
+            params,
+            data: response.data
+        });
+
+        if (endpoint.includes('/trending') || endpoint.includes('/discover')) {
+            return { results: [] };
+        }
+        if (endpoint.includes('/movie/') || endpoint.includes('/tv/')) {
+            return {};
+        }
+        return null;
     } catch (error) {
+        console.error('TMDB Request Failed:', {
+            endpoint,
+            params,
+            error: error.message
+        });
+
+        if (endpoint.includes('/trending') || endpoint.includes('/discover')) {
+            return { results: [] };
+        }
         return null;
     }
 };

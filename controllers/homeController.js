@@ -1,100 +1,208 @@
 const { fetchFromTMDB } = require('../services/tmdb');
 const { generateProxyUrl } = require('../utils/urlHelper');
 
+const createMeta = (page = 1, totalPages = 1, totalResults = 0, path = '/') => ({
+    pagination: {
+        page,
+        total_pages: totalPages,
+        total_results: totalResults,
+        has_next: page < totalPages,
+        has_prev: page > 1
+    },
+    links: {
+        self: path,
+        next: page < totalPages ? `${path}?page=${page + 1}` : null,
+        prev: page > 1 ? `${path}?page=${page - 1}` : null
+    },
+    timestamp: new Date().toISOString()
+});
+
+const processMediaItem = (req, item) => {
+    const type = item.media_type || (item.title ? 'movie' : 'tv');
+    const title = item.title || item.name || 'Untitled';
+    const year = item.release_date ? new Date(item.release_date).getFullYear() :
+        item.first_air_date ? new Date(item.first_air_date).getFullYear() : null;
+
+    return {
+        id: item.id,
+        type,
+        title,
+        year,
+        overview: item.overview || '',
+        poster: generateProxyUrl(req, item.poster_path, 'w342'),
+        backdrop: generateProxyUrl(req, item.backdrop_path, 'w780'),
+        rating: item.vote_average ? Math.round(item.vote_average * 10) / 10 : null,
+        genres: item.genre_ids || [],
+        details_link: `/api/details/${type}/${item.id}`,
+        media_type: type
+    };
+};
+
+const createSection = (req, title, items, options = {}) => {
+    const {
+        layout_type = 'row',
+        tile_size = 'normal',
+        is_hero = false,
+        view_all_path = null,
+        items_per_page = 20
+    } = options;
+
+    return {
+        title,
+        layout_type,
+        tile_size,
+        is_hero,
+        items: items.map(item => processMediaItem(req, item)).slice(0, items_per_page),
+        view_all_path,
+        total_items: items.length,
+        meta: createMeta(1, Math.ceil(items.length / items_per_page), items.length)
+    };
+};
+
+const getFallbackData = () => ({
+    results: [
+        {
+            id: 0,
+            title: 'No data available',
+            overview: 'Could not load content at this time. Please try again later.',
+            poster_path: null,
+            backdrop_path: null,
+            media_type: 'movie'
+        }
+    ]
+});
+
 exports.getHomeData = async (req, res) => {
     try {
-        const [
-            trending,
-            latest,
-            awards,
-            topRated,
-            netflixMovies,
-            actionMovies,
-            tvOnAir,
-            tvTop,
-            tvPopular,
-            tvNetflix,
-            tvAction
-        ] = await Promise.all([
+        const responses = await Promise.all([
             fetchFromTMDB('/trending/all/day'),
-            fetchFromTMDB('/discover/movie', { sort_by: 'primary_release_date.desc', 'vote_count.gte': 50 }),
-            fetchFromTMDB('/discover/movie', { sort_by: 'popularity.desc', 'vote_count.gte': 500, 'vote_average.gte': 7 }),
+            fetchFromTMDB('/discover/movie', {
+                sort_by: 'primary_release_date.desc',
+                'vote_count.gte': 50
+            }),
+            fetchFromTMDB('/discover/movie', {
+                sort_by: 'popularity.desc',
+                'vote_count.gte': 500,
+                'vote_average.gte': 7
+            }),
             fetchFromTMDB('/movie/top_rated', { region: 'US' }),
-            fetchFromTMDB('/discover/movie', { with_watch_providers: '8', watch_region: 'US', sort_by: 'popularity.desc' }),
-            fetchFromTMDB('/discover/movie', { with_genres: '28', sort_by: 'popularity.desc', 'vote_count.gte': 100 }),
+            fetchFromTMDB('/discover/movie', {
+                with_watch_providers: '8',
+                watch_region: 'US',
+                sort_by: 'popularity.desc'
+            }),
+            fetchFromTMDB('/discover/movie', {
+                with_genres: '28',
+                sort_by: 'popularity.desc',
+                'vote_count.gte': 100
+            }),
             fetchFromTMDB('/tv/on_the_air'),
             fetchFromTMDB('/tv/top_rated'),
             fetchFromTMDB('/tv/popular'),
-            fetchFromTMDB('/discover/tv', { with_watch_providers: '8', watch_region: 'US', sort_by: 'popularity.desc' }),
-            fetchFromTMDB('/discover/tv', { with_genres: '10759', sort_by: 'popularity.desc' })
+            fetchFromTMDB('/discover/tv', {
+                with_watch_providers: '8',
+                watch_region: 'US',
+                sort_by: 'popularity.desc'
+            }),
+            fetchFromTMDB('/discover/tv', {
+                with_genres: '10759',
+                sort_by: 'popularity.desc'
+            })
         ]);
 
-        const processResults = (data) => {
-            if (!data?.results) return [];
-            return data.results.slice(0, 15).map(item => ({
-                id: item.id,
-                type: item.media_type || (item.title ? 'movie' : 'tv'),
-                title: item.title || item.name,
-                poster: generateProxyUrl(req, item.poster_path, 'w342'),
-                backdrop: generateProxyUrl(req, item.backdrop_path, 'w780'),
-                details_link: `/api/details/${item.media_type || (item.title ? 'movie' : 'tv')}/${item.id}`
-            }));
-        };
+        const [
+            trending = getFallbackData(),
+            latest = getFallbackData(),
+            awards = getFallbackData(),
+            topRated = getFallbackData(),
+            netflixMovies = getFallbackData(),
+            actionMovies = getFallbackData(),
+            tvOnAir = getFallbackData(),
+            tvTop = getFallbackData(),
+            tvPopular = getFallbackData(),
+            tvNetflix = getFallbackData(),
+            tvAction = getFallbackData()
+        ] = responses;
 
         const collections = [
-            { title: "Adrenaline Action", genre: 28, type: "movie", size: "large" },
-            { title: "Sci-Fi", genre: 878, type: "movie", size: "normal" },
-            { title: "Animation", genre: 16, type: "movie", size: "normal" },
-            { title: "Binge-Worthy Comedy", genre: 35, type: "tv", size: "wide" },
-            { title: "Horror", genre: 27, type: "movie", size: "normal" },
-            { title: "Adventure Picks", genre: 12, type: "movie", size: "normal" },
-            { title: "Thrillers", genre: 53, type: "movie", size: "normal" },
-            { title: "Romance Favorites", genre: 10749, type: "movie", size: "normal" },
-            { title: "Documentaries", genre: 99, type: "movie", size: "normal" },
-            { title: "Crime Stories", genre: 80, type: "tv", size: "wide" },
-            { title: "Fantasy Worlds", genre: 14, type: "movie", size: "normal" },
-            { title: "Historical Drama", genre: 36, type: "movie", size: "normal" },
-            { title: "Character-Driven Drama", genre: 18, type: "tv", size: "large" },
-            { title: "Music & Performances", genre: 10402, type: "movie", size: "normal" }
-        ].map(c => ({
-            ...c,
-            list_link: `/api/list?endpoint=/discover/${c.type}&params=${encodeURIComponent(JSON.stringify({ with_genres: c.genre }))}`
-        }));
+            {
+                title: "Trending Now",
+                data: trending.results,
+                options: {
+                    layout_type: 'carousel',
+                    is_hero: true
+                }
+            },
+            {
+                title: "Latest Releases",
+                data: latest.results,
+                options: {
+                    layout_type: 'bento',
+                    tile_size: 'wide'
+                }
+            },
+            {
+                title: "4K Ultra HD",
+                data: awards.results,
+                options: {
+                    layout_type: 'row',
+                    view_all_path: '/api/list?type=movie&sort=vote_average.desc&vote_count.gte=500&vote_average.gte=7'
+                }
+            },
+            {
+                title: "Top Rated Movies",
+                data: topRated.results,
+                options: {
+                    layout_type: 'row',
+                    view_all_path: '/api/list?type=movie&sort=vote_average.desc'
+                }
+            },
+            {
+                title: "TV Shows Airing Today",
+                data: tvOnAir.results,
+                options: {
+                    layout_type: 'bento',
+                    tile_size: 'large',
+                    view_all_path: '/api/list?type=tv&status=airing_today'
+                }
+            },
+            {
+                title: "Top TV Shows",
+                data: tvTop.results,
+                options: {
+                    layout_type: 'row',
+                    view_all_path: '/api/list?type=tv&sort=vote_average.desc'
+                }
+            }
+        ];
+
+        const data = collections.map(collection =>
+            createSection(
+                req,
+                collection.title,
+                collection.data,
+                collection.options
+            )
+        );
 
         res.json({
-            spotlight: processResults(trending).slice(0, 5),
-            tabs: {
-                discover: {
-                    collections: collections,
-                    rows: [
-                        { title: "Latest Releases", items: processResults(latest), view_all_path: `/api/list?endpoint=/discover/movie&params=${encodeURIComponent('{"sort_by": "primary_release_date.desc", "vote_count.gte": 50}')}` },
-                        { title: "4K Releases", items: processResults(awards), view_all_path: `/api/list?endpoint=/discover/movie&params=${encodeURIComponent('{"sort_by": "popularity.desc", "vote_count.gte": 500, "vote_average.gte": 7}')}` },
-                        { title: "Top Rated", items: processResults(topRated), view_all_path: `/api/list?endpoint=/movie/top_rated&params=${encodeURIComponent('{"region": "US"}')}` },
-                        { title: "Movies on Netflix", items: processResults(netflixMovies), view_all_path: `/api/list?endpoint=/discover/movie&params=${encodeURIComponent('{"with_watch_providers": "8", "watch_region": "US", "sort_by": "popularity.desc"}')}` },
-                        { title: "Action Movies", items: processResults(actionMovies), view_all_path: `/api/list?endpoint=/discover/movie&params=${encodeURIComponent('{"with_genres": "28", "sort_by": "popularity.desc", "vote_count.gte": 100}')}` }
-                    ]
-                },
-                movies: {
-                    rows: [
-                        { title: "In Cinemas", items: processResults(latest), view_all_path: `/api/list?endpoint=/movie/now_playing&params=${encodeURIComponent('{"region": "US"}')}` },
-                        { title: "4K Releases", items: processResults(awards), view_all_path: `/api/list?endpoint=/discover/movie&params=${encodeURIComponent('{"sort_by": "popularity.desc", "vote_count.gte": 500, "vote_average.gte": 7}')}` },
-                        { title: "Top Rated", items: processResults(topRated), view_all_path: `/api/list?endpoint=/movie/top_rated&params=${encodeURIComponent('{"region": "US"}')}` },
-                        { title: "Movies on Netflix", items: processResults(netflixMovies), view_all_path: `/api/list?endpoint=/discover/movie&params=${encodeURIComponent('{"with_watch_providers": "8", "watch_region": "US", "sort_by": "popularity.desc"}')}` },
-                        { title: "Action Movies", items: processResults(actionMovies), view_all_path: `/api/list?endpoint=/discover/movie&params=${encodeURIComponent('{"with_genres": "28", "sort_by": "popularity.desc"}')}` }
-                    ]
-                },
-                tv: {
-                    rows: [
-                        { title: "On The Air", items: processResults(tvOnAir), view_all_path: `/api/list?endpoint=/tv/on_the_air` },
-                        { title: "Top Rated", items: processResults(tvTop), view_all_path: `/api/list?endpoint=/tv/top_rated` },
-                        { title: "Most Popular", items: processResults(tvPopular), view_all_path: `/api/list?endpoint=/tv/popular` },
-                        { title: "Shows on Netflix", items: processResults(tvNetflix), view_all_path: `/api/list?endpoint=/discover/tv&params=${encodeURIComponent('{"with_watch_providers": "8", "watch_region": "US", "sort_by": "popularity.desc"}')}` },
-                        { title: "Action & Adventure", items: processResults(tvAction), view_all_path: `/api/list?endpoint=/discover/tv&params=${encodeURIComponent('{"with_genres": "10759", "sort_by": "popularity.desc"}')}` }
-                    ]
-                }
+            data,
+            meta: {
+                ...createMeta(),
+                title: 'Vyla - Home',
+                description: 'Discover trending movies and TV shows',
+                canonical: '/',
+                type: 'website',
+                image: trending.results[0]?.backdrop_path
+                    ? generateProxyUrl(req, trending.results[0].backdrop_path, 'original')
+                    : null
             }
         });
     } catch (error) {
-        res.status(500).json({ error: "Failed to load home data" });
+        console.error('Home data error:', error);
+        res.status(500).json({
+            error: "Failed to load home data",
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 };
