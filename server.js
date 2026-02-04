@@ -6,19 +6,10 @@ const apiRoutes = require('./routes');
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-const corsOptions = {
-    origin: ['http://localhost:3000', 'http://localhost:3001'],
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
-    optionsSuccessStatus: 200
-};
+app.use(cors());
 
-app.use(cors(corsOptions));
 app.use(express.json());
-
 app.use(express.static(path.join(__dirname, 'public')));
-
 app.use('/api', apiRoutes);
 
 app.get('/api', (req, res) => {
@@ -50,6 +41,7 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
     app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
     });
 }
 
