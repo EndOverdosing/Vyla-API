@@ -1,60 +1,112 @@
-![Vyla Headless API Thumbnail](https://vyla.vercel.app/images/thumbnail.png)
+# Vyla Media API
 
-# Vyla Headless API
+Vyla is a headless media API that provides easy access to TMDB's movie and TV show data with a clean, consistent interface. It's perfect for building media-focused applications without dealing with complex API integrations.
 
-Vyla is a production-ready **Headless Media API**. It transforms raw TMDB data into a structured, UI-ready JSON format. Whether you are building a Web, Mobile, or TV app, you can use Vyla as your backend to skip the complex logic of data fetching, image proxying, and layout structuring.
+## Features
 
-## How to Use Vyla
+- Get trending, top-rated, and genre-specific content
+- Search for movies and TV shows
+- Get detailed information about movies and TV shows
+- Automatic image URL generation
+- CORS enabled for frontend integration
 
-You can integrate Vyla into your project in two ways:
+## Setup
 
-### 1. The "Plug & Play" Method (No Setup)
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/yourusername/vyla-api.git
+   cd vyla-api
+   ```
 
-Simply point your frontend's fetch requests to my hosted instance. No API keys or server management required on your end.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-* **Base URL:** `https://vyla-api.vercel.app/api`
+3. **Set up environment variables**
+   Create a `.env` file in the root directory:
+   ```
+   TMDB_API_KEY=your_tmdb_api_key
+   PORT=3001
+   ```
 
-### 2. The "Self-Hosted" Method (Fork)
+4. **Start the development server**
+   ```bash
+   vercel dev
+   ```
+   The API will be available at `http://localhost:3001`
 
-If you want to customize the logic, add your own genres, or manage your own rate limits:
+## API Endpoints
 
-1. **Fork** this repository.
-2. Add your `TMDB_ACCESS_TOKEN` to your Vercel/Environment variables.
-3. Deploy and use your own generated URL.
+### Home Page
+Get curated content for the home page
 
----
-
-## Integration Example
-
-Fetch your homepage content with a single call:
-
-```javascript
-const response = await fetch('https://vyla-api.vercel.app/api/home');
-const { data, meta } = await response.json();
-
-// 'data' contains your carousel, bento grids, and movie rows
-// 'meta' contains your navigation paths for the "Back" button
-
+```http
+GET /api/home
 ```
 
----
+**Response Example:**
+```json
+{
+  "trending": [
+    {
+      "id": 12345,
+      "title": "Movie Title",
+      "overview": "Movie overview...",
+      "posterPath": "https://image.tmdb.org/t/p/w500/poster_path.jpg",
+      "backdropPath": "https://image.tmdb.org/t/p/original/backdrop_path.jpg",
+      "mediaType": "movie",
+      "voteAverage": 7.8,
+      "releaseDate": "2023-10-15"
+    }
+  ],
+  "topRated": [...],
+  "netflixOriginals": [...],
+  "actionMovies": [...],
+  "comedyMovies": [...],
+  "horrorMovies": [...],
+  "romanceMovies": [...],
+  "documentaries": [...]
+}
+```
 
-## API Path Mapping
+### Search
+Search for movies and TV shows
 
-| Endpoint | Purpose | Use Case |
-| --- | --- | --- |
-| `/home` | **Content Discovery** | Powering the main dashboard and tabs. |
-| `/details/:type/:id` | **Item View** | Fetching full metadata, cast, and trailers for a title. |
-| `/list?path=...` | **Exploration** | Powering the "View All" or "Genre" pages. |
-| `/search?q=...` | **Global Search** | Instant results for Movies, TV, and Actors. |
-| `/image/:size/:file` | **Image Optimization** | Serving resized, proxied posters and backdrops. |
+```http
+GET /api/search?q=query
+```
 
----
+### Get Details
+Get detailed information about a movie or TV show
 
-## Layout Logic
+```http
+GET /api/details/movie/{id}
+GET /api/details/tv/{id}
+```
 
-Vyla doesn't just send data; it sends **instructions**. The API response tells your frontend how to look:
+### Player
+Get streaming information for a movie or TV show
 
-* **`layout_type: "carousel"`**: Use a hero slider.
-* **`layout_type: "bento"`**: Use a CSS grid (supporting `wide`, `large`, or `normal` tiles).
-* **`layout_type: "row"`**: Use a standard horizontal scroller.
+```http
+GET /api/player/movie/{id}
+GET /api/player/tv/{id}/season/{season}/episode/{episode}
+```
+
+## Deployment
+
+Deploy your own instance with Vercel:
+
+1. Fork this repository
+2. Create a new project in Vercel
+3. Add your `TMDB_API_KEY` to the environment variables
+4. Deploy!
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Credits
+
+- [TMDB](https://www.themoviedb.org/) for the movie and TV show data
+- [Vercel](https://vercel.com) for hosting
