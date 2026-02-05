@@ -1,0 +1,6 @@
+{
+    "success": false,
+    "error": "Not Found",
+    "message": "The requested resource was not found.",
+    "documentation": "/"
+}

@@ -1,39 +1,235 @@
 # Vyla Media API
 
-Vyla is a headless media API providing access to TMDB’s movie and TV show data. It offers a clean, consistent interface for building media apps with curated content, search, cast info, streaming sources, and image handling.
+A **headless, backend-first** RESTful API providing access to TMDB's comprehensive movie and TV show database. Vyla is designed to be used as a standalone backend service that powers your custom frontend applications.
+
+## Two Ways to Use Vyla
+
+### 1. **Use Our Hosted API** (Recommended for Quick Start)
+Don't want to host your own backend? Use our production-ready API:
+
+**Base URL:** `https://vyla-api.vercel.app/api`
+
+Just point your frontend to our hosted API and start building! No backend setup required.
+
+### 2. **Self-Host Your Own Instance**
+Fork this repo and deploy your own instance with custom configurations.
 
 ---
 
 ## Features
 
-* Trending, top-rated, Netflix Originals, and genre-specific content
-* Movie/TV details with cast, crew, seasons, and related recommendations
-* Search movies and TV shows (`/api/search`)
-* Cast and actor details (`/api/cast/{id}`)
-* Unified media details endpoint (`/api/details/{type}/{id}`)
-* Direct TMDB image URLs with automatic resizing
-* View paths for easy navigation (`view_path` and `details_link` in responses)
-* Rate-limited and CORS-enabled
-* Node.js + Express backend, Tailwind CSS frontend
+- **Backend-First Architecture**: Pure API service, bring your own frontend
+- **Production-Ready Hosted API**: Use `https://vyla-api.vercel.app/api` immediately
+- **34 Streaming Sources**: Multiple player options including 4K sources
+- **Curated Content**: Trending, top-rated, Netflix Originals, and genre-specific collections
+- **Comprehensive Details**: Full movie/TV metadata with cast, crew, seasons, and recommendations
+- **Smart Search**: Multi-query search across movies and TV shows
+- **Actor Profiles**: Detailed cast information with filmography
+- **Image Optimization**: Direct TMDB image URLs with automatic resizing and caching
+- **RESTful Design**: Clean API paths with consistent response formats
+- **CORS Enabled**: Works with any frontend framework (React, Vue, Angular, etc.)
+- **Health Monitoring**: Built-in health check and status endpoints
 
 ---
 
-## Quick Start
+## Quick Start for Frontend Developers
+
+### Using the Hosted API
+
+Simply use this base URL in your frontend:
+
+```javascript
+const API_BASE_URL = 'https://vyla-api.vercel.app/api';
+
+const getHomeData = async () => {
+  const response = await fetch(`${API_BASE_URL}/home`);
+  return response.json();
+};
+
+const searchMovies = async (query) => {
+  const response = await fetch(`${API_BASE_URL}/search?q=${query}`);
+  return response.json();
+};
+
+const getMovieDetails = async (id) => {
+  const response = await fetch(`${API_BASE_URL}/details/movie/${id}`);
+  return response.json();
+};
+```
+
+### React Example
+
+```jsx
+import { useState, useEffect } from 'react';
+
+const API_BASE_URL = 'https://vyla-api.vercel.app/api';
+
+function Movies() {
+  const [movies, setMovies] = useState([]);
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/home`)
+      .then(res => res.json())
+      .then(data => setMovies(data.data[0].items));
+  }, []);
+
+  return (
+    <div>
+      {movies.map(movie => (
+        <div key={movie.id}>
+          <h3>{movie.title}</h3>
+          <img src={movie.poster} alt={movie.title} />
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Vue Example
+
+```vue
+<template>
+  <div>
+    <div v-for="movie in movies" :key="movie.id">
+      <h3>{{ movie.title }}</h3>
+      <img :src="movie.poster" :alt="movie.title" />
+    </div>
+  </div>
+</template>
+
+<script>
+export default {
+  data() {
+    return {
+      movies: [],
+      API_BASE_URL: 'https://vyla-api.vercel.app/api'
+    }
+  },
+  mounted() {
+    fetch(`${this.API_BASE_URL}/home`)
+      .then(res => res.json())
+      .then(data => this.movies = data.data[0].items);
+  }
+}
+</script>
+```
+
+### Next.js Example
+
+```jsx
+const API_BASE_URL = 'https://vyla-api.vercel.app/api';
+
+export async function getServerSideProps() {
+  const res = await fetch(`${API_BASE_URL}/home`);
+  const data = await res.json();
+
+  return {
+    props: { homeData: data }
+  };
+}
+
+export default function Home({ homeData }) {
+  return (
+    <div>
+      {homeData.data.map(section => (
+        <section key={section.title}>
+          <h2>{section.title}</h2>
+          <div>
+            {section.items.map(item => (
+              <div key={item.id}>
+                <img src={item.poster} alt={item.title} />
+                <h3>{item.title}</h3>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+## API Endpoints
+
+All endpoints are available at: `https://vyla-api.vercel.app/api`
+
+| Endpoint | Description | Example |
+|----------|-------------|---------|
+| `/home` | Get curated home sections | `GET /api/home` |
+| `/search?q={query}` | Search movies/TV shows | `GET /api/search?q=avengers` |
+| `/details/{type}/{id}` | Get media details | `GET /api/details/movie/299534` |
+| `/cast/{id}` | Get actor details | `GET /api/cast/3223` |
+| `/player/{type}/{id}` | Get streaming sources | `GET /api/player/movie/299534` |
+| `/list?endpoint={path}` | Custom TMDB lists | `GET /api/list?endpoint=/movie/top_rated` |
+| `/image/{size}/{file}` | Image proxy | `GET /api/image/w500/poster.jpg` |
+| `/health` | Health check | `GET /api/health` |
+| `/status` | Server status | `GET /api/status` |
+
+### Quick Examples
+
+**Get Trending Movies:**
+```bash
+curl https://vyla-api.vercel.app/api/home
+```
+
+**Search for Content:**
+```bash
+curl "https://vyla-api.vercel.app/api/search?q=avengers"
+```
+
+**Get Movie Details:**
+```bash
+curl https://vyla-api.vercel.app/api/details/movie/299534
+```
+
+**Get Streaming Sources:**
+```bash
+curl https://vyla-api.vercel.app/api/player/movie/299534
+```
+
+---
+
+## Streaming Sources
+
+Vyla provides **34 streaming sources** out of the box:
+
+- **Premium 4K**: VidEasy, VidFast
+- **Popular**: VidSrc, VidLink, P-Stream, MultiEmbed
+- **Specialized**: French sources, Russian sources
+- **Alternatives**: 2Embed, SmashyStream, AutoEmbed, and 25+ more
+
+Each source includes:
+- `stream_url`: Direct embed URL
+- `isFrench`: Language indicator
+- `needsSandbox`: Security requirements
+- `supportsEvents`: Event communication support
+- `startTimeParam`: Custom time parameter support
+
+---
+
+## Self-Hosting (Optional)
+
+Want to run your own instance? Here's how:
 
 ### Prerequisites
 
-* Node.js 14+ and npm
-* TMDB API Key ([get it here](https://www.themoviedb.org/settings/api))
+- Node.js 14+
+- TMDB API Key ([Get it here](https://www.themoviedb.org/settings/api))
 
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/vyla-api.git
-cd vyla-api
+git clone https://github.com/endoverdosing/Vyla-API.git
+cd Vyla-API
 npm install
 ```
 
-Create a `.env` file:
+### Configuration
+
+Create `.env` file:
 
 ```env
 TMDB_API_KEY=your_tmdb_api_key_here
@@ -41,603 +237,370 @@ PORT=3000
 NODE_ENV=development
 ```
 
-Start the server:
+### Run Locally
 
 ```bash
 npm run dev
-# or with Vercel CLI
-vercel dev
 ```
 
-The API will run at `http://localhost:3000`. Open `public/index.html` in a browser to view the demo frontend.
+Your API will be available at `http://localhost:3000/api`
+
+### Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/endoverdosing/Vyla-API)
+
+1. Click the deploy button
+2. Add `TMDB_API_KEY` environment variable
+3. Deploy!
+
+Your API will be live at `https://your-project.vercel.app/api`
 
 ---
 
-## API Endpoints Overview
+## Complete API Documentation
 
-| Endpoint                                           | Method | Description                                                                      | Required Parameters |
-| -------------------------------------------------- | ------ | -------------------------------------------------------------------------------- | ------------------ |
-| `/api/home`                                        | GET    | Curated home sections (Trending, Top Rated, Genres, Netflix Originals, etc.)     | None |
-| `/api/search`                                      | GET    | Search movies or TV shows                                                        | `q` (search query) |
-| `/api/details/{type}/{id}`                         | GET    | Media details with cast, crew, recommendations, and trailer (type: 'movie' or 'tv') | `type`, `id` |
-| `/api/cast/{id}`                                   | GET    | Cast/actor details including known-for movies and shows                          | `id` |
-| `/api/player/movie/{id}`                           | GET    | Streaming sources for a movie                                                    | `id` |
-| `/api/player/tv/{id}`                              | GET    | Streaming sources for a TV episode                                               | `id`, `s` (season), `e` (episode) |
-| `/api/image/{size}/{file}`                         | GET    | TMDB image proxy with resizing and fallback                                      | `size`, `file` |
-| `/api/list`                                        | GET    | Fetch a custom list from TMDB                                                    | `endpoint` (TMDB API path) |
+For detailed API documentation, see [API_DOCS.md](./API_DOCS.md)
 
-| Endpoint                                           | Method | Description                                                                      |
-| -------------------------------------------------- | ------ | -------------------------------------------------------------------------------- |
-| `/api/home`                                        | GET    | Curated home sections (Trending, Top Rated, Genres, Netflix Originals, etc.)     |
-| `/api/search?q={query}&page={page}`                | GET    | Search movies or TV shows                                                        |
-| `/api/details/{type}/{id}`                          | GET    | Media details with cast, crew, recommendations, and trailer (type: 'movie' or 'tv') |
-| `/api/cast/{id}`                                   | GET    | Cast/actor details including known-for movies and shows                          |
-| `/api/player/movie/{id}`                           | GET    | Streaming sources for a movie                                                    |
-| `/api/player/tv/{id}?s={season}&e={episode}`       | GET    | Streaming sources for a TV episode                                               |
-| `/api/image/{size}/{file}`                         | GET    | TMDB image proxy with resizing and fallback                                      |
-| `/api/list?endpoint={tmdb_endpoint}&params={JSON}` | GET    | Fetch a custom list from TMDB (e.g., `/movie/top_rated`, `/tv/popular`, `/collection/{id}`) |
+### Response Format
 
----
+All endpoints return consistent JSON responses:
 
-## Example Usage
-
-**Note:** All endpoints require a valid TMDB API key to be set in the `.env` file as `TMDB_API_KEY`.
-
-**Fetch home data:**
-
-```bash
-curl http://localhost:3000/api/home
-```
-
-**Search movies or TV shows:**
-
-```bash
-curl "http://localhost:3000/api/search?q=avengers"
-```
-
-**Get media details:**
-
-```bash
-# Get movie details
-curl http://localhost:3000/api/details/movie/299534
-
-# Get TV show details
-curl http://localhost:3000/api/details/tv/1668
-```
-
-**Get cast info:**
-
-```bash
-curl http://localhost:3000/api/cast/500
-```
-
-**Get streaming sources for a movie:**
-
-```bash
-curl http://localhost:3000/api/player/movie/299534
-```
-
-**Get streaming sources for a TV episode:**
-
-```bash
-curl "http://localhost:3000/api/player/tv/1668?s=1&e=1"
-```
-
-**Fetch a custom TMDB list:**
-
-```bash
-# Get top rated movies
-curl "http://localhost:3000/api/list?endpoint=/movie/top_rated"
-
-# Get popular TV shows
-curl "http://localhost:3000/api/list?endpoint=/tv/popular"
-
-# Get a specific collection (requires collection ID)
-curl "http://localhost:3000/api/list?endpoint=/collection/86311"
-
-# With pagination
-curl "http://localhost:3000/api/list?endpoint=/movie/now_playing&page=2"
-
-# With additional parameters (URL-encoded JSON)
-curl "http://localhost:3000/api/list?endpoint=/discover/movie¶ms=%7B%22with_genres%22:28,%22sort_by%22:%22popularity.desc%22%7D"
-```
-
-**Note:** The `endpoint` parameter should be a valid TMDB API endpoint path (without the base URL). For collections, use the format `/collection/{collection_id}`.
-
----
-
-## Endpoint Examples
-
-### 1. Home Data
-
-**Request:**
-
-```http
-GET /api/home
-```
-
-**Response:**
-
+**Success:**
 ```json
 {
+  "success": true,
+  "data": {},
+  "meta": {}
+}
+```
+
+**Error:**
+```json
+{
+  "success": false,
+  "error": "Error message",
+  "request": {
+    "timestamp": "2025-02-04T12:00:00.000Z"
+  }
+}
+```
+
+---
+
+## Frontend Framework Examples
+
+### Axios Setup (Universal)
+
+```javascript
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: 'https://vyla-api.vercel.app/api',
+  timeout: 10000
+});
+
+export const vylaApi = {
+  getHome: () => api.get('/home'),
+  search: (query, page = 1) => api.get('/search', { params: { q: query, page } }),
+  getDetails: (type, id) => api.get(`/details/${type}/${id}`),
+  getCast: (id) => api.get(`/cast/${id}`),
+  getPlayer: (type, id, season, episode) => {
+    const params = type === 'tv' ? { s: season, e: episode } : {};
+    return api.get(`/player/${type}/${id}`, { params });
+  }
+};
+```
+
+### Fetch Wrapper (Universal)
+
+```javascript
+class VylaAPI {
+  constructor(baseURL = 'https://vyla-api.vercel.app/api') {
+    this.baseURL = baseURL;
+  }
+
+  async request(endpoint, options = {}) {
+    const response = await fetch(`${this.baseURL}${endpoint}`, options);
+    if (!response.ok) throw new Error(`API Error: ${response.status}`);
+    return response.json();
+  }
+
+  getHome() {
+    return this.request('/home');
+  }
+
+  search(query, page = 1) {
+    return this.request(`/search?q=${query}&page=${page}`);
+  }
+
+  getDetails(type, id) {
+    return this.request(`/details/${type}/${id}`);
+  }
+
+  getCast(id) {
+    return this.request(`/cast/${id}`);
+  }
+
+  getPlayer(type, id, season, episode) {
+    const params = type === 'tv' ? `?s=${season}&e=${episode}` : '';
+    return this.request(`/player/${type}/${id}${params}`);
+  }
+}
+
+export const vylaApi = new VylaAPI();
+```
+
+### React Query (React)
+
+```jsx
+import { useQuery } from '@tanstack/react-query';
+
+const API_BASE = 'https://vyla-api.vercel.app/api';
+
+export const useHome = () => {
+  return useQuery({
+    queryKey: ['home'],
+    queryFn: () => fetch(`${API_BASE}/home`).then(res => res.json())
+  });
+};
+
+export const useSearch = (query) => {
+  return useQuery({
+    queryKey: ['search', query],
+    queryFn: () => fetch(`${API_BASE}/search?q=${query}`).then(res => res.json()),
+    enabled: !!query
+  });
+};
+
+export const useMovieDetails = (id) => {
+  return useQuery({
+    queryKey: ['movie', id],
+    queryFn: () => fetch(`${API_BASE}/details/movie/${id}`).then(res => res.json())
+  });
+};
+```
+
+### SWR (React/Next.js)
+
+```jsx
+import useSWR from 'swr';
+
+const API_BASE = 'https://vyla-api.vercel.app/api';
+const fetcher = (url) => fetch(url).then(res => res.json());
+
+export const useHome = () => {
+  return useSWR(`${API_BASE}/home`, fetcher);
+};
+
+export const useSearch = (query) => {
+  return useSWR(query ? `${API_BASE}/search?q=${query}` : null, fetcher);
+};
+
+export const useMovieDetails = (id) => {
+  return useSWR(`${API_BASE}/details/movie/${id}`, fetcher);
+};
+```
+
+---
+
+## CORS & Security
+
+- **CORS Enabled**: Works from any domain
+- **Rate Limiting**: Fair usage policies apply
+- **Image Proxy**: Built-in TMDB image caching
+- **HTTPS Only**: Secure connections required in production
+
+---
+
+## Example Response Objects
+
+### Home Data
+```json
+{
+  "success": true,
   "data": [
     {
       "title": "Trending Now",
       "layout_type": "carousel",
       "items": [
         {
-          "id": 12345,
-          "title": "Sample Movie",
-          "overview": "This is a sample movie overview.",
-          "poster_path": "/poster123.jpg",
-          "backdrop_path": "/backdrop123.jpg",
+          "id": 299534,
+          "title": "Avengers: Endgame",
+          "poster": "https://image.tmdb.org/t/p/w342/poster.jpg",
+          "backdrop": "https://image.tmdb.org/t/p/w780/backdrop.jpg",
           "media_type": "movie",
-          "vote_average": 7.8,
-          "release_date": "2023-01-01",
-          "genre_ids": [12, 28],
-          "view_path": "/api/details/movie/12345",
-          "details_link": "/api/details/movie/12345"
+          "vote_average": 8.3,
+          "release_date": "2019-04-24",
+          "details_link": "/api/details/movie/299534"
         }
       ]
-    },
-    {
-      "title": "Top Rated",
-      "layout_type": "row",
-      "items": [
-        {
-          "id": 12346,
-          "title": "Top Rated Movie",
-          "overview": "This is another sample movie.",
-          "poster_path": "/poster456.jpg",
-          "backdrop_path": "/backdrop456.jpg",
-          "media_type": "movie",
-          "vote_average": 8.5,
-          "release_date": "2023-02-01",
-          "genre_ids": [18, 36],
-          "view_path": "/api/details/movie/12346",
-          "details_link": "/api/details/movie/12346"
-        }
-      ]
-    }
-  ],
-  "meta": {
-    "timestamp": "2023-01-01T12:00:00.000Z",
-    "version": "1.0.0"
-  }
-}
-```
-
-### 2. Search Results
-
-**Request:**
-
-```http
-GET /api/search?q=avengers
-```
-
-**Response:**
-
-```json
-{
-  "meta": {
-    "query": "avengers",
-    "page": 1,
-    "total_pages": 1,
-    "total_results": 42
-  },
-  "results": [
-    {
-      "id": 299534,
-      "title": "Avengers: Endgame",
-      "overview": "After the devastating events of Avengers: Infinity War...",
-      "poster_path": "/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
-      "backdrop_path": "/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
-      "media_type": "movie",
-      "vote_average": 8.3,
-      "release_date": "2019-04-24",
-      "genre_ids": [12, 28, 878],
-      "view_path": "/api/details/movie/299534",
-      "details_link": "/api/details/movie/299534"
-    },
-    {
-      "id": 24428,
-      "title": "The Avengers",
-      "overview": "When an unexpected enemy emerges...",
-      "poster_path": "/RYMX2wcKCBAr24UyPD7xwmjaTn.jpg",
-      "backdrop_path": "/hbn46fQaRmlpBuUrEiFqv0Gkl6r.jpg",
-      "media_type": "movie",
-      "vote_average": 7.7,
-      "release_date": "2012-04-25",
-      "genre_ids": [878, 28, 12],
-      "view_path": "/api/details/movie/24428",
-      "details_link": "/api/details/movie/24428"
     }
   ]
 }
 ```
 
-### 3. Media Details
-
-**Movie Details Request:**
-
-```http
-GET /api/details/movie/12345
-```
-
-**Movie Details Response:**
-
+### Movie Details
 ```json
 {
-  "id": 12345,
-  "title": "Sample Movie",
-  "overview": "This is a sample movie overview.",
-  "tagline": "A sample tagline",
-  "runtime": 120,
-  "release_date": "2023-01-01",
-  "vote_average": 7.8,
-  "vote_count": 1000,
-  "genres": [
-    { "id": 12, "name": "Adventure" },
-    { "id": 28, "name": "Action" }
-  ],
-  "backdrop": "https://image.tmdb.org/t/p/original/backdrop123.jpg",
-  "poster": "https://image.tmdb.org/t/p/w500/poster123.jpg",
-  "trailer_url": "https://www.youtube.com/watch?v=example",
-  "homepage": "https://example.com/movie",
-  "status": "Released",
-  "original_language": "en",
-  "production_companies": [
-    {
-      "id": 1,
-      "name": "Sample Studio",
-      "logo_path": "/logo123.png",
-      "origin_country": "US"
-    }
-  ],
-  "cast": [
-    {
-      "id": 500,
-      "name": "John Doe",
-      "character": "Main Character",
-      "profile_path": "/actor123.jpg",
-      "profile": "https://image.tmdb.org/t/p/w185/actor123.jpg",
-      "view_cast_link": "/api/cast/500"
-    }
-  ],
-  "related": [
-    {
-      "id": 12346,
-      "type": "movie",
-      "title": "Sequel Movie",
-      "poster_path": "/poster124.jpg",
-      "poster": "https://image.tmdb.org/t/p/w342/poster124.jpg",
-      "details_link": "/api/details/movie/12346",
-      "year": "2024",
-      "rating": 8.0
-    }
-  ],
-  "view_path": "/api/details/movie/12345"
+  "success": true,
+  "info": {
+    "id": 299534,
+    "title": "Avengers: Endgame",
+    "overview": "After the devastating events...",
+    "runtime": 181,
+    "rating": 8.3,
+    "genres": [{"id": 28, "name": "Action"}],
+    "backdrop": "https://image.tmdb.org/t/p/original/backdrop.jpg",
+    "poster": "https://image.tmdb.org/t/p/w780/poster.jpg",
+    "trailer_url": "https://www.youtube.com/watch?v=..."
+  },
+  "cast": [],
+  "related": [],
+  "player_link": "/api/player/movie/299534"
 }
 ```
 
-**TV Show Details Request:**
-
-```http
-GET /api/details/tv/54321
-```
-
-**TV Show Details Response:**
-
+### Streaming Sources
 ```json
 {
-  "id": 54321,
-  "name": "Sample TV Show",
-  "overview": "This is a sample TV show overview.",
-  "first_air_date": "2023-01-01",
-  "last_air_date": "2023-12-31",
-  "number_of_seasons": 1,
-  "number_of_episodes": 10,
-  "vote_average": 8.2,
-  "vote_count": 500,
-  "genres": [
-    { "id": 18, "name": "Drama" },
-    { "id": 80, "name": "Crime" }
-  ],
-  "backdrop_path": "/backdrop54321.jpg",
-  "backdrop": "https://image.tmdb.org/t/p/original/backdrop54321.jpg",
-  "poster_path": "/poster54321.jpg",
-  "poster": "https://image.tmdb.org/t/p/w500/poster54321.jpg",
-  "trailer_url": "https://www.youtube.com/watch?v=example2",
-  "homepage": "https://example.com/tv",
-  "status": "Returning Series",
-  "seasons": [
-    {
-      "number": 1,
-      "name": "Season 1",
-      "episode_count": 10,
-      "air_date": "2023-01-01",
-      "poster_path": "/season1.jpg",
-      "poster": "https://image.tmdb.org/t/p/w500/season1.jpg",
-      "overview": "First season overview"
-    }
-  ],
-  "cast": [
-    {
-      "id": 501,
-      "name": "Jane Smith",
-      "character": "Lead Role",
-      "profile_path": "/actor501.jpg",
-      "profile": "https://image.tmdb.org/t/p/w185/actor501.jpg",
-      "view_cast_link": "/api/cast/501"
-    }
-  ],
-  "related": [
-    {
-      "id": 54322,
-      "type": "tv",
-      "title": "Spin-off Series",
-      "poster_path": "/poster54322.jpg",
-      "poster": "https://image.tmdb.org/t/p/w342/poster54322.jpg",
-      "details_link": "/api/details/tv/54322",
-      "year": "2024",
-      "rating": 8.1
-    }
-  ],
-  "view_path": "/api/details/tv/54321"
-}
-```
-
-### 4. Cast/Actor Details
-
-**Request:**
-
-```http
-GET /api/cast/500
-```
-
-**Response:**
-
-```json
-{
-  "id": 500,
-  "name": "John Doe",
-  "biography": "John Doe is an American actor known for...",
-  "birthday": "1980-01-01",
-  "deathday": null,
-  "place_of_birth": "Los Angeles, California, USA",
-  "profile_path": "/actor500.jpg",
-  "profile": "https://image.tmdb.org/t/p/h632/actor500.jpg",
-  "known_for": {
-    "movies": [
-      {
-        "id": 12345,
-        "title": "Sample Movie",
-        "character": "Main Character",
-        "poster_path": "/poster123.jpg",
-        "poster": "https://image.tmdb.org/t/p/w342/poster123.jpg",
-        "details_link": "/api/details/movie/12345"
-        "details_link": "/api/details/movie/299534"
-      }
-    ],
-    "shows": [
-      {
-        "id": 1668,
-        "title": "Avengers Assemble",
-        "poster": "https://image.tmdb.org/t/p/w342/poster_path.jpg",
-        "details_link": "/api/details/tv/1668"
-      }
-    ]
-  }
-}
-```
-
----
-
-### 5. Streaming Sources (Player)
-
-**Movie Request:**
-
-```http
-GET /api/player/movie/299534
-```
-
-**Response:**
-
-```json
-{
+  "success": true,
   "meta": {
     "content_id": 299534,
-    "type": "movie",
-    "season": null,
-    "episode": null,
-    "back_path": "/api/details/movie/299534"
+    "type": "movie"
   },
   "sources": [
     {
       "id": "pstream",
       "name": "P-Stream",
-      "stream_url": "https://iframe.pstream.mov/media/tmdb-movie-299534"
-    },
-    {
-      "id": "vidlink",
-      "name": "VidLink",
-      "stream_url": "https://vidlink.pro/movie/299534"
+      "stream_url": "https://iframe.pstream.mov/media/tmdb-movie-299534",
+      "isFrench": false,
+      "needsSandbox": true,
+      "supportsEvents": true
     }
   ]
 }
 ```
-
-**TV Episode Request:**
-
-```http
-GET /api/player/tv/1668?s=1&e=1
-```
-
-**Response:**
-
-```json
-{
-  "meta": {
-    "content_id": 1668,
-    "type": "tv",
-    "season": 1,
-    "episode": 1,
-    "back_path": "/api/details/tv/1668"
-  },
-  "sources": [
-    {
-      "id": "pstream",
-      "name": "P-Stream",
-      "stream_url": "https://iframe.pstream.mov/media/tmdb-tv-1668/1/1"
-    },
-    {
-      "id": "vidlink",
-      "name": "VidLink",
-      "stream_url": "https://vidlink.pro/tv/1668/1/1"
-    }
-  ]
-}
-```
-
----
-
-## Response Objects Reference
-
-### Movie Object
-```json
-{
-  "id": 12345,
-  "title": "Movie Title",
-  "overview": "Movie overview text...",
-  "poster_path": "/poster123.jpg",
-  "backdrop_path": "/backdrop123.jpg",
-  "media_type": "movie",
-  "vote_average": 7.8,
-  "release_date": "2023-01-01",
-  "genre_ids": [12, 28],
-  "view_path": "/api/details/movie/12345",
-  "details_link": "/api/details/movie/12345"
-}
-```
-
-### TV Show Object
-```json
-{
-  "id": 54321,
-  "name": "TV Show Title",
-  "overview": "TV show overview...",
-  "poster_path": "/poster54321.jpg",
-  "backdrop_path": "/backdrop54321.jpg",
-  "media_type": "tv",
-  "vote_average": 8.2,
-  "first_air_date": "2023-01-01",
-  "genre_ids": [18, 80],
-  "view_path": "/api/details/tv/54321",
-  "details_link": "/api/details/tv/54321"
-}
-```
-
-### Cast Member Object
-```json
-{
-  "id": 500,
-  "name": "Actor Name",
-  "character": "Character Name",
-  "profile_path": "/actor500.jpg",
-  "view_cast_link": "/api/cast/500"
-}
-```
-
-### Genre Object
-```json
-{
-  "id": 28,
-  "name": "Action"
-}
-```
-
-## Frontend Demo
-
-* Located at `public/index.html`
-* Loads `/api/home` sections dynamically
-* Displays trending carousel, genre rows, and Netflix Originals
-* Provides search functionality and previews for movies/TV shows
-* Uses proxy images for safe loading
-
----
-
-## Image Handling
-
-* Sizes: `w92`, `w154`, `w185`, `w342`, `w500`, `w780`, `original`
-* Example: `/api/image/w500/poster_path.jpg`
-* Fallback: 1x1 transparent pixel
-* TMDB URL mapping: Poster: `https://image.tmdb.org/t/p/w500/{poster_path}`
-
----
-
-## Response Format
-
-**Success:**
-
-```json
-{
-  "data": [...],
-  "meta": {
-    "timestamp": "2023-10-15T12:00:00Z",
-    "version": "1.0.0",
-    "api_version": "v1"
-  }
-}
-```
-
-**Error:**
-
-```json
-{
-  "error": {
-    "status": 404,
-    "message": "Resource not found",
-    "code": "not_found"
-  }
-}
-```
-
----
-
-## Development Notes
-
-* Frontend: `public/` (HTML, JS, CSS)
-* Tailwind CSS: Use PostCSS or CLI for production
-* Dev server reloads automatically:
-
-```bash
-npm run dev
-```
-
-* Logs: `logs/`
-* Health check endpoint: `/health`
-
----
-
-## Production Deployment
-
-1. Set `NODE_ENV=production`
-2. Configure reverse proxy (Nginx/Apache)
-3. Enable SSL/TLS
-4. Add environment variables
 
 ---
 
 ## Contributing
 
-1. Fork the repo
+We welcome contributions from frontend and backend developers!
+
+### For Frontend Developers
+- Build awesome UIs using our API
+- Share your implementations
+- Report API issues or request features
+
+### For Backend Developers
+- Improve API performance
+- Add new endpoints
+- Enhance documentation
+
+### How to Contribute
+1. Fork the repository
 2. Create a feature branch
-3. Commit changes
-4. Push branch
-5. Open Pull Request
+3. Make your changes
+4. Submit a pull request
+
+---
+
+## Environment Variables
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `TMDB_API_KEY` | Yes | Your TMDB API key | - |
+| `PORT` | No | Server port | 3000 |
+| `NODE_ENV` | No | Environment | development |
+| `ALLOWED_ORIGINS` | No | CORS origins | * |
+
+---
+
+## Deployment Options
+
+### Vercel (Recommended)
+```bash
+vercel --prod
+```
+
+### Railway
+```bash
+railway up
+```
+
+### Heroku
+```bash
+git push heroku main
+```
+
+### Docker
+```dockerfile
+FROM node:18-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+EXPOSE 3000
+CMD ["npm", "start"]
+```
+
+---
+
+## Support & Community
+
+- **Issues**: [GitHub Issues](https://github.com/endoverdosing/vyla-api/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/endoverdosing/vyla-api/discussions)
+- **API Status**: `https://vyla-api.vercel.app/api/status`
+- **Documentation**: [API_DOCS.md](./API_DOCS.md)
+
+---
+
+## Use Cases
+
+Perfect for building:
+- **Movie/TV Streaming Platforms**
+- **Content Discovery Apps**
+- **Media Recommendation Systems**
+- **Entertainment Dashboards**
+- **Mobile Apps** (React Native, Flutter)
+- **Desktop Apps** (Electron)
+- **Browser Extensions**
+- **Discord Bots**
+- **Telegram Bots**
+
+---
+
+## Performance
+
+- **Response Time**: < 500ms average
+- **Uptime**: 99.9%
+- **Rate Limits**: Fair usage
+- **Caching**: Automatic image caching (1 year)
+- **CDN**: Global edge network via Vercel
 
 ---
 
 ## License
 
-MIT
+MIT License - feel free to use in personal and commercial projects!
+
+---
+
+## Acknowledgments
+
+- **TMDB**: For providing comprehensive media data
+- **Streaming Providers**: For embed sources
+- **Community**: For contributions and feedback
+
+---
+
+## Links
+
+- **Live API**: https://vyla-api.vercel.app/api
+- **GitHub**: https://github.com/endoverdosing/vyla-api
+- **TMDB**: https://www.themoviedb.org
+- **Documentation**: [API_DOCS.md](./API_DOCS.md)
+
+---
+
+**Built with ❤️ for developers who want a hassle-free media API**

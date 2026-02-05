@@ -1,0 +1,24 @@
+{
+  "name": "Vyla API",
+  "version": "1.0.0",
+  "status": "active",
+  "documentation": "https://github.com/EndOverdosing/Vyla-API",
+  "endpoints": {
+    "home": "/api/home",
+    "search": "/api/search?q={query}",
+    "details": "/api/details/{type}/{id}",
+    "player": "/api/player/{type}/{id}",
+    "image_proxy": "/api/image/{size}/{file}",
+    "list": "/api/list?endpoint={tmdb_endpoint}&params={json_params}",
+    "status": "/api/status"
+  },
+  "examples": {
+    "search_movies": "/api/search?q=inception",
+    "get_movie_details": "/api/details/movie/27205",
+    "get_tv_show_details": "/api/details/tv/1399",
+    "get_movie_player": "/api/player/movie/27205",
+    "get_tv_episode": "/api/player/tv/1399/season/1/episode/1"
+  },
+  "repository": "https://github.com/EndOverdosing/Vyla-API",
+  "license": "MIT"
+}
