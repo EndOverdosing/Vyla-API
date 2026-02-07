@@ -21,8 +21,6 @@ const processMediaItems = (results, defaultType = null) => {
                 id: item.id,
                 title: item.title || item.name,
                 overview: item.overview || null,
-                poster_path: item.poster_path,
-                backdrop_path: item.backdrop_path,
                 poster: getImageUrl(item.poster_path, 'w342'),
                 backdrop: getImageUrl(item.backdrop_path, 'w780'),
                 media_type: mediaType,

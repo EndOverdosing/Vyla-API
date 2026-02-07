@@ -1,14 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const imageController = require('../controllers/imageController');
 const listController = require('../controllers/listController');
 const castController = require('../controllers/castController');
 const homeController = require('../controllers/homeController');
 const searchController = require('../controllers/searchController');
 const detailsController = require('../controllers/detailsController');
 const playerController = require('../controllers/playerController');
-
-router.get('/image/:size/:file', imageController.proxyImage);
 
 router.get('/list', listController.getList);
 
@@ -84,15 +81,6 @@ router.get('/', (req, res) => {
                     page: 'Page number (optional, default: 1)'
                 }
             },
-            image: {
-                path: '/api/image/:size/:file',
-                method: 'GET',
-                description: 'Proxy TMDB images',
-                parameters: {
-                    size: 'Image size: w92, w154, w185, w342, w500, w780, original',
-                    file: 'Image filename from TMDB'
-                }
-            },
             health: {
                 path: '/api/health',
                 method: 'GET',
@@ -108,7 +96,6 @@ router.get('/', (req, res) => {
             movie_player: '/api/player/movie/299534',
             tv_player: '/api/player/tv/1668?s=1&e=1',
             custom_list: '/api/list?endpoint=/movie/top_rated',
-            image: '/api/image/w500/poster.jpg'
         }
     });
 });

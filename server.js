@@ -70,7 +70,6 @@ app.get('/', (req, res) => {
             cast: '/api/cast/{id}',
             player: '/api/player/{type}/{id}',
             list: '/api/list?endpoint={tmdb_endpoint}',
-            image: '/api/image/{size}/{file}',
             health: '/api/health',
             status: '/api/status'
         },

@@ -117,7 +117,7 @@ const processSeasons = (details) => {
 const buildMediaInfo = (details, type, videos) => {
     const backdrop = details.backdrop_path || details.poster_path;
 
-    return {
+    const mediaInfo = {
         id: details.id,
         type,
         title: details.title || details.name,
@@ -125,13 +125,12 @@ const buildMediaInfo = (details, type, videos) => {
         overview: details.overview || 'No overview available.',
         runtime: details.runtime || (details.episode_run_time?.[0] || null),
         release_date: details.release_date || details.first_air_date || null,
-        last_air_date: details.last_air_date || null,
         rating: details.vote_average ? Math.round(details.vote_average * 10) / 10 : null,
         vote_count: details.vote_count || 0,
         popularity: details.popularity || 0,
         genres: details.genres || [],
         backdrop: getImageUrl(backdrop, 'original'),
-        poster: getImageUrl(details.poster_path, 'w780'),
+        poster: getImageUrl(details.poster_path || details.backdrop_path, 'w780'),
         trailer_url: extractTrailerUrl(videos),
         homepage: details.homepage || null,
         status: details.status || null,
@@ -140,12 +139,14 @@ const buildMediaInfo = (details, type, videos) => {
         production_companies: (details.production_companies || []).map(company => ({
             id: company.id,
             name: company.name,
-            logo_path: getImageUrl(company.logo_path, 'w500'),
+            logo: getImageUrl(company.logo_path, 'w500'),
             origin_country: company.origin_country
         })),
         production_countries: details.production_countries || [],
         spoken_languages: details.spoken_languages || []
     };
+
+    return mediaInfo;
 };
 
 const buildResponse = (type, details, credits, recommendations, videos) => {

@@ -58,8 +58,6 @@ const processSearchResults = (results) => {
             type: item.media_type,
             title: item.title || item.name || 'Untitled',
             overview: item.overview || null,
-            poster_path: item.poster_path,
-            backdrop_path: item.backdrop_path,
             poster: getImageUrl(item.poster_path, 'w342'),
             backdrop: getImageUrl(item.backdrop_path, 'w780'),
             rating: item.vote_average ? Math.round(item.vote_average * 10) / 10 : null,

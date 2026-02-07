@@ -25,7 +25,7 @@ Fork this repo and deploy your own instance with custom configurations.
 - **Comprehensive Details**: Full movie/TV metadata with cast, crew, seasons, and recommendations
 - **Smart Search**: Multi-query search across movies and TV shows
 - **Actor Profiles**: Detailed cast information with filmography
-- **Image Optimization**: Direct TMDB image URLs with automatic resizing and caching
+- **Direct TMDB Images**: Direct TMDB image URLs with automatic resizing
 - **RESTful Design**: Clean API paths with consistent response formats
 - **CORS Enabled**: Works with any frontend framework (React, Vue, Angular, etc.)
 - **Health Monitoring**: Built-in health check and status endpoints
@@ -407,7 +407,6 @@ export const useMovieDetails = (id) => {
 
 - **CORS Enabled**: Works from any domain
 - **Rate Limiting**: Fair usage policies apply
-- **Image Proxy**: Built-in TMDB image caching
 - **HTTPS Only**: Secure connections required in production
 
 ---

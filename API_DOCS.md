@@ -70,10 +70,6 @@ class VylaClient {
     });
     return this.fetch(`/list?${queryParams}`);
   }
-
-  getImageURL(path: string, size: string = 'w500') {
-    return `${this.baseURL}/image/${size}/${path}`;
-  }
 }
 
 export const vyla = new VylaClient();
@@ -105,9 +101,7 @@ Get curated home page sections with trending, top-rated, and genre-based content
           "id": 299534,
           "title": "Avengers: Endgame",
           "overview": "After the devastating events of Avengers: Infinity War...",
-          "poster_path": "/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
           "poster": "https://image.tmdb.org/t/p/w342/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
-          "backdrop_path": "/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
           "backdrop": "https://image.tmdb.org/t/p/w780/7RyHsO4yDXtBv1zUU3mTpHeQ0d5.jpg",
           "media_type": "movie",
           "vote_average": 8.3,
@@ -194,7 +188,6 @@ GET https://vyla-api.vercel.app/api/search?q=avengers&page=1
     "has_prev": false,
     "next_page": 2,
     "prev_page": null,
-    "back_path": "/api/home",
     "timestamp": "2025-02-04T12:00:00.000Z"
   },
   "results": [
@@ -203,7 +196,6 @@ GET https://vyla-api.vercel.app/api/search?q=avengers&page=1
       "type": "movie",
       "title": "Avengers: Endgame",
       "overview": "After the devastating events...",
-      "poster_path": "/or06FN3Dka5tukK1e9sl16pB3iy.jpg",
       "poster": "https://image.tmdb.org/t/p/w342/poster.jpg",
       "backdrop": "https://image.tmdb.org/t/p/w780/backdrop.jpg",
       "rating": 8.3,
@@ -211,7 +203,6 @@ GET https://vyla-api.vercel.app/api/search?q=avengers&page=1
       "release_date": "2019-04-24",
       "year": "2019",
       "genre_ids": [12, 28, 878],
-      "details_path": "/api/details/movie/299534",
       "details_link": "/api/details/movie/299534"
     }
   ],
@@ -277,7 +268,7 @@ GET https://vyla-api.vercel.app/api/details/tv/1668
     },
     "type": "movie",
     "title": "Avengers: Endgame",
-    "description": "After the devastating events...",
+    "description": "After the devastating events of Avengers: Infinity War...",
     "image": "https://image.tmdb.org/t/p/original/backdrop.jpg"
   },
   "info": {
@@ -285,7 +276,7 @@ GET https://vyla-api.vercel.app/api/details/tv/1668
     "type": "movie",
     "title": "Avengers: Endgame",
     "tagline": "Part of the journey is the end.",
-    "overview": "After the devastating events...",
+    "overview": "After the devastating events of Avengers: Infinity War...",
     "runtime": 181,
     "release_date": "2019-04-24",
     "rating": 8.3,
@@ -307,7 +298,7 @@ GET https://vyla-api.vercel.app/api/details/tv/1668
       {
         "id": 420,
         "name": "Marvel Studios",
-        "logo_path": "https://image.tmdb.org/t/p/w500/logo.png",
+        "logo": "https://image.tmdb.org/t/p/w500/logo.png",
         "origin_country": "US"
       }
     ],
@@ -491,7 +482,6 @@ GET https://vyla-api.vercel.app/api/player/tv/1668?s=1&e=1
     "type": "movie",
     "season": null,
     "episode": null,
-    "back_path": "/api/details/movie/299534",
     "timestamp": "2025-02-04T12:00:00.000Z"
   },
   "sources": [
@@ -534,7 +524,7 @@ GET https://vyla-api.vercel.app/api/player/tv/1668?s=1&e=1
     "season": 1,
     "episode": 1,
     "episode_identifier": "S01E01",
-    "back_path": "/api/details/tv/1668"
+    "timestamp": "2025-02-04T12:00:00.000Z"
   },
   "sources": [
     {
@@ -618,7 +608,6 @@ GET https://vyla-api.vercel.app/api/list?endpoint=/discover/movie&params={"with_
       "type": "movie",
       "title": "The Shawshank Redemption",
       "overview": "Imprisoned in the 1940s...",
-      "poster_path": "/poster.jpg",
       "poster": "https://image.tmdb.org/t/p/w342/poster.jpg",
       "backdrop": "https://image.tmdb.org/t/p/w780/backdrop.jpg",
       "rating": 8.7,
@@ -636,7 +625,7 @@ GET https://vyla-api.vercel.app/api/list?endpoint=/discover/movie&params={"with_
 
 ### 7. Image Proxy
 
-Proxy TMDB images with caching.
+Proxy images from TMDB.
 
 **Endpoint:** `GET /api/image/:size/:file`
 
@@ -647,27 +636,14 @@ Proxy TMDB images with caching.
 | size | string | Yes | Image size |
 | file | string | Yes | Image filename from TMDB |
 
-**Available Sizes:**
-
-**Posters:** `w92`, `w154`, `w185`, `w342`, `w500`, `w780`, `original`
-
-**Backdrops:** `w300`, `w780`, `w1280`, `original`
-
-**Profiles:** `w45`, `w185`, `h632`, `original`
-
 **Example:**
 ```bash
 GET https://vyla-api.vercel.app/api/image/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg
 ```
 
 **Features:**
-- Automatic caching (1 year)
-- Fallback to transparent pixel on error
-- Streaming response
 
-**Usage in HTML:**
 ```html
-<img src="https://vyla-api.vercel.app/api/image/w500/poster.jpg" alt="Movie Poster">
 ```
 
 ---
@@ -944,7 +920,6 @@ export default function HomeScreen() {
 
 - **Fair usage policy**: No hard limits for public API
 - **Recommended**: Cache responses when possible
-- **Image proxy**: Cached for 1 year automatically
 
 ---
 
@@ -957,7 +932,7 @@ CORS is enabled for all origins. Your frontend can make requests from any domain
 ## Tips for Frontend Developers
 
 1. **Cache API responses** to reduce server load
-2. **Use image proxy** for TMDB images to avoid CORS issues
+2. **Use direct TMDB image URLs** for images to avoid CORS issues
 3. **Implement pagination** for large lists
 4. **Show loading states** during API calls
 5. **Handle errors** gracefully with fallback UI
