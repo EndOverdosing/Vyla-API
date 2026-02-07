@@ -174,12 +174,11 @@ Get curated home page sections with trending, top-rated, and genre-based content
 const response = await fetch('https://vyla-api.vercel.app/api/home');
 const data = await response.json();
 
-// Display trending section with title images
 const trendingSection = data.data.find(section => section.title === 'Trending Now');
 trendingSection.items.forEach(item => {
-  console.log(item.title_image); // Logo URL for overlay
-  console.log(item.poster);      // Poster image
-  console.log(item.backdrop);    // Background image
+  console.log(item.title_image);
+  console.log(item.poster);
+  console.log(item.backdrop);
 });
 ```
 
@@ -255,7 +254,6 @@ async function searchContent(query, page = 1) {
   );
   const data = await response.json();
   
-  // Access title images for overlay display
   data.results.forEach(item => {
     if (item.title_image) {
       console.log(`${item.title} has logo:`, item.title_image);
@@ -648,7 +646,6 @@ GET https://vyla-api.vercel.app/api/genres/movie/28?page=1&sort_by=popularity.de
 
 **Example Usage:**
 ```javascript
-// Get action movies sorted by rating
 async function getTopActionMovies() {
   const response = await fetch(
     'https://vyla-api.vercel.app/api/genres/movie/28?sort_by=vote_average.desc&page=1'
@@ -656,7 +653,6 @@ async function getTopActionMovies() {
   return response.json();
 }
 
-// Get comedy TV shows
 async function getComedyShows() {
   const response = await fetch(
     'https://vyla-api.vercel.app/api/genres/tv/35?page=1'
@@ -735,7 +731,6 @@ async function loadSeason(tvId, seasonNumber) {
   );
   const data = await response.json();
   
-  // Display all episodes in the season
   data.data.episodes.forEach(episode => {
     console.log(`S${seasonNumber}E${episode.episode_number}: ${episode.name}`);
     console.log(`Watch: ${episode.player_link}`);
@@ -1036,8 +1031,6 @@ async function playTVEpisode(tvId, season, episode) {
     `https://vyla-api.vercel.app/api/player/tv/${tvId}?s=${season}&e=${episode}`
   );
   const data = await response.json();
-  
-  // Same iframe logic as movie
 }
 ```
 
@@ -1267,12 +1260,10 @@ function App() {
   const [genreContent, setGenreContent] = useState([]);
 
   useEffect(() => {
-    // Load home sections
     fetch(`${API_BASE}/home`)
       .then(res => res.json())
       .then(data => setSections(data.data));
     
-    // Load genres
     fetch(`${API_BASE}/genres/movie`)
       .then(res => res.json())
       .then(data => setGenres(data.genres));
@@ -1373,7 +1364,7 @@ const API_BASE = 'https://vyla-api.vercel.app/api';
 const show = ref(null);
 const currentSeason = ref(null);
 
-const tvId = 1399; // Game of Thrones
+const tvId = 1399;
 
 onMounted(async () => {
   const response = await fetch(`${API_BASE}/details/tv/${tvId}`);
@@ -1396,19 +1387,18 @@ const playEpisode = (episode) => {
 ### Next.js 14 with Server Components
 
 ```jsx
-// app/page.js
 const API_BASE = 'https://vyla-api.vercel.app/api';
 
 async function getHomeData() {
   const res = await fetch(`${API_BASE}/home`, { 
-    next: { revalidate: 3600 } // Cache for 1 hour
+    next: { revalidate: 3600 }
   });
   return res.json();
 }
 
 async function getGenres() {
   const res = await fetch(`${API_BASE}/genres/movie`, {
-    next: { revalidate: 86400 } // Cache for 24 hours
+    next: { revalidate: 86400 }
   });
   return res.json();
 }
@@ -1451,7 +1441,6 @@ export default async function Home() {
   );
 }
 
-// app/genre/[id]/page.js
 async function getGenreContent(genreId, page = 1) {
   const res = await fetch(
     `${API_BASE}/genres/movie/${genreId}?page=${page}&sort_by=vote_average.desc`,
@@ -1565,7 +1554,6 @@ export default function HomeScreen() {
 ### Image Optimization
 
 ```javascript
-// Progressive image loading
 function ProgressiveImage({ poster, titleImage, alt }) {
   const [loaded, setLoaded] = useState(false);
   
@@ -1598,9 +1586,8 @@ function ProgressiveImage({ poster, titleImage, alt }) {
 ### Data Caching
 
 ```javascript
-// Simple cache implementation
 const cache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+const CACHE_DURATION = 5 * 60 * 1000;
 
 async function fetchWithCache(url) {
   const cached = cache.get(url);
@@ -1645,7 +1632,6 @@ function usePagination(fetchFunction) {
   return { data, loadMore, loading, hasMore };
 }
 
-// Usage
 const { data, loadMore, loading } = usePagination(
   (page) => fetch(`${API_BASE}/genres/movie/28?page=${page}`).then(r => r.json())
 );
@@ -1710,7 +1696,6 @@ function TVShowNavigator({ tvId }) {
       .then(res => res.json())
       .then(data => {
         setShow(data);
-        // Load first season by default
         loadSeason(1);
       });
   }, [tvId]);

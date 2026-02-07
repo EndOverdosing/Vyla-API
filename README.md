@@ -2,17 +2,6 @@
 
 A **headless, backend-first** RESTful API providing access to TMDB's comprehensive movie and TV show database. Vyla is designed to be used as a standalone backend service that powers your custom frontend applications.
 
-## 🎉 What's New in v1.1.0
-
-- **🎨 Title/Logo Images**: All media items now include logo overlays for professional UI displays
-- **📸 Enhanced Image Collections**: Access multiple backdrops, posters, and logos per item
-- **🎬 Multiple Videos**: Get all available trailers, teasers, and clips
-- **🗂️ Genre Browsing**: Browse and filter content by genre with pagination
-- **📺 TV Episode Details**: Complete season and episode information with crew details
-- **🎭 Guest Stars**: See guest appearances in TV episodes
-
----
-
 ## Two Ways to Use Vyla
 
 ### 1. **Use Our Hosted API** (Recommended for Quick Start)
@@ -37,14 +26,14 @@ Fork this repo and deploy your own instance with custom configurations.
 - **CORS Enabled**: Works with any frontend framework (React, Vue, Angular, etc.)
 
 ### Content Features
-- **🎨 Title/Logo Images**: Professional logo overlays for all media
-- **📸 Enhanced Images**: Multiple backdrops, posters, logos per item
-- **🎬 Video Collections**: All trailers, teasers, clips available
+- **Title/Logo Images**: Professional logo overlays for all media
+- **Enhanced Images**: Multiple backdrops, posters, logos per item
+- **Video Collections**: All trailers, teasers, clips available
 - **Curated Collections**: Trending, top-rated, Netflix Originals, genre-specific
 - **Comprehensive Details**: Full metadata with cast, crew, seasons
 - **Smart Search**: Multi-query search across movies and TV shows
-- **🗂️ Genre Browsing**: Filter and sort by genre
-- **📺 Episode Details**: Season and episode information
+- **Genre Browsing**: Filter and sort by genre
+- **Episode Details**: Season and episode information
 - **Actor Profiles**: Detailed cast information with filmography
 
 ### Technical Features
@@ -79,25 +68,21 @@ const getMovieDetails = async (id) => {
   return response.json();
 };
 
-// NEW: Get genre list
 const getMovieGenres = async () => {
   const response = await fetch(`${API_BASE_URL}/genres/movie`);
   return response.json();
 };
 
-// NEW: Browse by genre
 const getActionMovies = async (page = 1) => {
   const response = await fetch(`${API_BASE_URL}/genres/movie/28?page=${page}`);
   return response.json();
 };
 
-// NEW: Get season details
 const getSeasonDetails = async (tvId, seasonNumber) => {
   const response = await fetch(`${API_BASE_URL}/tv/${tvId}/season/${seasonNumber}`);
   return response.json();
 };
 
-// NEW: Get episode details
 const getEpisodeDetails = async (tvId, season, episode) => {
   const response = await fetch(`${API_BASE_URL}/episodes/${tvId}/${season}/${episode}`);
   return response.json();
@@ -127,7 +112,7 @@ function Movies() {
           {/* Background Image */}
           <div style={{ backgroundImage: `url(${movie.backdrop})` }} className="backdrop" />
           
-          {/* Title Logo Overlay (NEW) */}
+          {/* Title Logo Overlay*/}
           {movie.title_image && (
             <img src={movie.title_image} alt={movie.title} className="title-logo" />
           )}
@@ -149,7 +134,7 @@ function Movies() {
 ```vue
 <template>
   <div>
-    <!-- Genre Filter (NEW) -->
+    <!-- Genre Filter -->
     <div class="genres">
       <button 
         v-for="genre in genres" 
@@ -183,7 +168,6 @@ export default {
     }
   },
   mounted() {
-    // Load genres
     fetch(`${this.API_BASE_URL}/genres/movie`)
       .then(res => res.json())
       .then(data => this.genres = data.genres);
@@ -263,11 +247,6 @@ All endpoints are available at: `https://vyla-api.vercel.app/api`
 | `/list?endpoint={path}` | Custom TMDB lists | `GET /api/list?endpoint=/movie/top_rated` |
 | `/image/{size}/{file}` | Image proxy | `GET /api/image/w500/poster.jpg` |
 | `/health` | Health check | `GET /api/health` |
-
-### 🆕 New Endpoints (v1.1.0)
-
-| Endpoint | Description | Example |
-|----------|-------------|---------|
 | `/genres/{type}` | Get genre list | `GET /api/genres/movie` |
 | `/genres/{type}/{genreId}` | Browse by genre | `GET /api/genres/movie/28?page=1` |
 | `/tv/{tvId}/season/{seasonNumber}` | Get season details | `GET /api/tv/1399/season/1` |
@@ -309,7 +288,7 @@ curl https://vyla-api.vercel.app/api/player/movie/299534
 
 ## Enhanced Response Features
 
-### 🎨 Title/Logo Images
+### Title/Logo Images
 
 All media items now include `title_image` field with transparent logo overlays:
 
@@ -317,7 +296,7 @@ All media items now include `title_image` field with transparent logo overlays:
 {
   "id": 299534,
   "title": "Avengers: Endgame",
-  "title_image": "https://image.tmdb.org/t/p/w500/logo.png",  // NEW!
+  "title_image": "https://image.tmdb.org/t/p/w500/logo.png",
   "poster": "https://image.tmdb.org/t/p/w342/poster.jpg",
   "backdrop": "https://image.tmdb.org/t/p/w780/backdrop.jpg"
 }
@@ -325,7 +304,7 @@ All media items now include `title_image` field with transparent logo overlays:
 
 **Use Case**: Perfect for Netflix-style hero sections with logo overlays on backdrop images.
 
-### 📸 Enhanced Image Collections
+### Enhanced Image Collections
 
 Access multiple images for each media item:
 
@@ -347,7 +326,7 @@ Access multiple images for each media item:
 }
 ```
 
-### 🎬 Video Collections
+### Video Collections
 
 Get all available videos (trailers, teasers, clips):
 
@@ -366,7 +345,7 @@ Get all available videos (trailers, teasers, clips):
 }
 ```
 
-### 🗂️ Genre Browsing
+### Genre Browsing
 
 Browse content by genre with sorting and pagination:
 
@@ -388,7 +367,7 @@ Browse content by genre with sorting and pagination:
 - `release_date.desc` / `release_date.asc`
 - `title.asc` / `title.desc`
 
-### 📺 Episode Details
+### Episode Details
 
 Complete TV show navigation:
 
@@ -529,11 +508,9 @@ export const vylaApi = {
     const params = type === 'tv' ? { s: season, e: episode } : {};
     return api.get(`/player/${type}/${id}`, { params });
   },
-  // NEW: Genre endpoints
   getGenres: (type) => api.get(`/genres/${type}`),
   browseGenre: (type, genreId, page = 1, sortBy = 'popularity.desc') => 
     api.get(`/genres/${type}/${genreId}`, { params: { page, sort_by: sortBy } }),
-  // NEW: TV endpoints
   getSeason: (tvId, seasonNumber) => api.get(`/tv/${tvId}/season/${seasonNumber}`),
   getEpisode: (tvId, season, episode) => api.get(`/episodes/${tvId}/${season}/${episode}`)
 };
@@ -565,7 +542,6 @@ class VylaAPI {
     return this.request(`/details/${type}/${id}`);
   }
 
-  // NEW: Genre methods
   getGenres(type) {
     return this.request(`/genres/${type}`);
   }
@@ -574,7 +550,6 @@ class VylaAPI {
     return this.request(`/genres/${type}/${genreId}?page=${page}&sort_by=${sortBy}`);
   }
 
-  // NEW: TV methods
   getSeason(tvId, seasonNumber) {
     return this.request(`/tv/${tvId}/season/${seasonNumber}`);
   }
@@ -616,7 +591,6 @@ export const useMovieDetails = (id) => {
   });
 };
 
-// NEW: Genre hooks
 export const useGenres = (type) => {
   return useQuery({
     queryKey: ['genres', type],
@@ -631,7 +605,6 @@ export const useGenreContent = (type, genreId, page = 1) => {
   });
 };
 
-// NEW: TV hooks
 export const useSeason = (tvId, seasonNumber) => {
   return useQuery({
     queryKey: ['season', tvId, seasonNumber],
