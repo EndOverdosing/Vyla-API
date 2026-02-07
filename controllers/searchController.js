@@ -57,6 +57,7 @@ const processSearchResults = (results) => {
             id: item.id,
             type: item.media_type,
             title: item.title || item.name || 'Untitled',
+            title_image: getImageUrl(item.logo_path, 'w500'),
             overview: item.overview || null,
             poster: getImageUrl(item.poster_path, 'w342'),
             backdrop: getImageUrl(item.backdrop_path, 'w780'),
@@ -65,6 +66,7 @@ const processSearchResults = (results) => {
             release_date: item.release_date || item.first_air_date || null,
             year: (item.release_date || item.first_air_date || '').split('-')[0] || null,
             genre_ids: item.genre_ids || [],
+            adult: item.adult || false,
             original_language: item.original_language || null,
             details_path: `/api/details/${item.media_type}/${item.id}`,
             details_link: `/api/details/${item.media_type}/${item.id}`

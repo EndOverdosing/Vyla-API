@@ -2,6 +2,17 @@
 
 A **headless, backend-first** RESTful API providing access to TMDB's comprehensive movie and TV show database. Vyla is designed to be used as a standalone backend service that powers your custom frontend applications.
 
+## 🎉 What's New in v1.1.0
+
+- **🎨 Title/Logo Images**: All media items now include logo overlays for professional UI displays
+- **📸 Enhanced Image Collections**: Access multiple backdrops, posters, and logos per item
+- **🎬 Multiple Videos**: Get all available trailers, teasers, and clips
+- **🗂️ Genre Browsing**: Browse and filter content by genre with pagination
+- **📺 TV Episode Details**: Complete season and episode information with crew details
+- **🎭 Guest Stars**: See guest appearances in TV episodes
+
+---
+
 ## Two Ways to Use Vyla
 
 ### 1. **Use Our Hosted API** (Recommended for Quick Start)
@@ -18,17 +29,29 @@ Fork this repo and deploy your own instance with custom configurations.
 
 ## Features
 
+### Core Features
 - **Backend-First Architecture**: Pure API service, bring your own frontend
 - **Production-Ready Hosted API**: Use `https://vyla-api.vercel.app/api` immediately
 - **34 Streaming Sources**: Multiple player options including 4K sources
-- **Curated Content**: Trending, top-rated, Netflix Originals, and genre-specific collections
-- **Comprehensive Details**: Full movie/TV metadata with cast, crew, seasons, and recommendations
-- **Smart Search**: Multi-query search across movies and TV shows
-- **Actor Profiles**: Detailed cast information with filmography
-- **Direct TMDB Images**: Direct TMDB image URLs with automatic resizing
 - **RESTful Design**: Clean API paths with consistent response formats
 - **CORS Enabled**: Works with any frontend framework (React, Vue, Angular, etc.)
+
+### Content Features
+- **🎨 Title/Logo Images**: Professional logo overlays for all media
+- **📸 Enhanced Images**: Multiple backdrops, posters, logos per item
+- **🎬 Video Collections**: All trailers, teasers, clips available
+- **Curated Collections**: Trending, top-rated, Netflix Originals, genre-specific
+- **Comprehensive Details**: Full metadata with cast, crew, seasons
+- **Smart Search**: Multi-query search across movies and TV shows
+- **🗂️ Genre Browsing**: Filter and sort by genre
+- **📺 Episode Details**: Season and episode information
+- **Actor Profiles**: Detailed cast information with filmography
+
+### Technical Features
+- **Direct TMDB Images**: Direct image URLs with automatic resizing
 - **Health Monitoring**: Built-in health check and status endpoints
+- **Error Handling**: Consistent error responses
+- **Pagination**: Built-in pagination for all list endpoints
 
 ---
 
@@ -55,9 +78,33 @@ const getMovieDetails = async (id) => {
   const response = await fetch(`${API_BASE_URL}/details/movie/${id}`);
   return response.json();
 };
+
+// NEW: Get genre list
+const getMovieGenres = async () => {
+  const response = await fetch(`${API_BASE_URL}/genres/movie`);
+  return response.json();
+};
+
+// NEW: Browse by genre
+const getActionMovies = async (page = 1) => {
+  const response = await fetch(`${API_BASE_URL}/genres/movie/28?page=${page}`);
+  return response.json();
+};
+
+// NEW: Get season details
+const getSeasonDetails = async (tvId, seasonNumber) => {
+  const response = await fetch(`${API_BASE_URL}/tv/${tvId}/season/${seasonNumber}`);
+  return response.json();
+};
+
+// NEW: Get episode details
+const getEpisodeDetails = async (tvId, season, episode) => {
+  const response = await fetch(`${API_BASE_URL}/episodes/${tvId}/${season}/${episode}`);
+  return response.json();
+};
 ```
 
-### React Example
+### React Example with Title Images
 
 ```jsx
 import { useState, useEffect } from 'react';
@@ -76,9 +123,20 @@ function Movies() {
   return (
     <div>
       {movies.map(movie => (
-        <div key={movie.id}>
+        <div key={movie.id} className="movie-card">
+          {/* Background Image */}
+          <div style={{ backgroundImage: `url(${movie.backdrop})` }} className="backdrop" />
+          
+          {/* Title Logo Overlay (NEW) */}
+          {movie.title_image && (
+            <img src={movie.title_image} alt={movie.title} className="title-logo" />
+          )}
+          
+          {/* Poster */}
+          <img src={movie.poster} alt={movie.title} className="poster" />
+          
           <h3>{movie.title}</h3>
-          <img src={movie.poster} alt={movie.title} />
+          <p>⭐ {movie.vote_average}</p>
         </div>
       ))}
     </div>
@@ -86,14 +144,30 @@ function Movies() {
 }
 ```
 
-### Vue Example
+### Vue Example with Genre Browsing
 
 ```vue
 <template>
   <div>
-    <div v-for="movie in movies" :key="movie.id">
-      <h3>{{ movie.title }}</h3>
-      <img :src="movie.poster" :alt="movie.title" />
+    <!-- Genre Filter (NEW) -->
+    <div class="genres">
+      <button 
+        v-for="genre in genres" 
+        :key="genre.id"
+        @click="loadGenre(genre.id)"
+        :class="{ active: selectedGenre === genre.id }"
+      >
+        {{ genre.name }}
+      </button>
+    </div>
+
+    <!-- Movies Grid -->
+    <div class="grid">
+      <div v-for="movie in movies" :key="movie.id" class="card">
+        <img v-if="movie.title_image" :src="movie.title_image" class="title-logo" />
+        <img :src="movie.poster" :alt="movie.title" />
+        <h3>{{ movie.title }}</h3>
+      </div>
     </div>
   </div>
 </template>
@@ -103,48 +177,69 @@ export default {
   data() {
     return {
       movies: [],
+      genres: [],
+      selectedGenre: null,
       API_BASE_URL: 'https://vyla-api.vercel.app/api'
     }
   },
   mounted() {
-    fetch(`${this.API_BASE_URL}/home`)
+    // Load genres
+    fetch(`${this.API_BASE_URL}/genres/movie`)
       .then(res => res.json())
-      .then(data => this.movies = data.data[0].items);
+      .then(data => this.genres = data.genres);
+  },
+  methods: {
+    loadGenre(genreId) {
+      this.selectedGenre = genreId;
+      fetch(`${this.API_BASE_URL}/genres/movie/${genreId}`)
+        .then(res => res.json())
+        .then(data => this.movies = data.results);
+    }
   }
 }
 </script>
 ```
 
-### Next.js Example
+### Next.js Example with TV Episodes
 
 ```jsx
 const API_BASE_URL = 'https://vyla-api.vercel.app/api';
 
-export async function getServerSideProps() {
-  const res = await fetch(`${API_BASE_URL}/home`);
-  const data = await res.json();
+export async function getServerSideProps({ params }) {
+  const [showRes, seasonRes] = await Promise.all([
+    fetch(`${API_BASE_URL}/details/tv/${params.id}`),
+    fetch(`${API_BASE_URL}/tv/${params.id}/season/${params.season}`)
+  ]);
 
-  return {
-    props: { homeData: data }
-  };
+  const [show, season] = await Promise.all([
+    showRes.json(),
+    seasonRes.json()
+  ]);
+
+  return { props: { show, season } };
 }
 
-export default function Home({ homeData }) {
+export default function SeasonPage({ show, season }) {
   return (
     <div>
-      {homeData.data.map(section => (
-        <section key={section.title}>
-          <h2>{section.title}</h2>
-          <div>
-            {section.items.map(item => (
-              <div key={item.id}>
-                <img src={item.poster} alt={item.title} />
-                <h3>{item.title}</h3>
-              </div>
-            ))}
+      {/* Show Header with Logo */}
+      {show.info.title_image && (
+        <img src={show.info.title_image} alt={show.info.title} />
+      )}
+      <h1>{show.info.title}</h1>
+
+      {/* Episodes Grid */}
+      <div className="episodes">
+        {season.data.episodes.map(episode => (
+          <div key={episode.id} className="episode-card">
+            <img src={episode.still} alt={episode.name} />
+            <h3>E{episode.episode_number}: {episode.name}</h3>
+            <p>{episode.overview}</p>
+            <p>⭐ {episode.rating}</p>
+            <a href={episode.player_link}>Watch</a>
           </div>
-        </section>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -156,6 +251,8 @@ export default function Home({ homeData }) {
 
 All endpoints are available at: `https://vyla-api.vercel.app/api`
 
+### Core Endpoints
+
 | Endpoint | Description | Example |
 |----------|-------------|---------|
 | `/home` | Get curated home sections | `GET /api/home` |
@@ -166,7 +263,15 @@ All endpoints are available at: `https://vyla-api.vercel.app/api`
 | `/list?endpoint={path}` | Custom TMDB lists | `GET /api/list?endpoint=/movie/top_rated` |
 | `/image/{size}/{file}` | Image proxy | `GET /api/image/w500/poster.jpg` |
 | `/health` | Health check | `GET /api/health` |
-| `/status` | Server status | `GET /api/status` |
+
+### 🆕 New Endpoints (v1.1.0)
+
+| Endpoint | Description | Example |
+|----------|-------------|---------|
+| `/genres/{type}` | Get genre list | `GET /api/genres/movie` |
+| `/genres/{type}/{genreId}` | Browse by genre | `GET /api/genres/movie/28?page=1` |
+| `/tv/{tvId}/season/{seasonNumber}` | Get season details | `GET /api/tv/1399/season/1` |
+| `/episodes/{tvId}/{season}/{episode}` | Get episode details | `GET /api/episodes/1399/1/1` |
 
 ### Quick Examples
 
@@ -185,9 +290,125 @@ curl "https://vyla-api.vercel.app/api/search?q=avengers"
 curl https://vyla-api.vercel.app/api/details/movie/299534
 ```
 
+**Browse Action Movies:**
+```bash
+curl "https://vyla-api.vercel.app/api/genres/movie/28?page=1&sort_by=popularity.desc"
+```
+
+**Get TV Season:**
+```bash
+curl https://vyla-api.vercel.app/api/tv/1399/season/1
+```
+
 **Get Streaming Sources:**
 ```bash
 curl https://vyla-api.vercel.app/api/player/movie/299534
+```
+
+---
+
+## Enhanced Response Features
+
+### 🎨 Title/Logo Images
+
+All media items now include `title_image` field with transparent logo overlays:
+
+```json
+{
+  "id": 299534,
+  "title": "Avengers: Endgame",
+  "title_image": "https://image.tmdb.org/t/p/w500/logo.png",  // NEW!
+  "poster": "https://image.tmdb.org/t/p/w342/poster.jpg",
+  "backdrop": "https://image.tmdb.org/t/p/w780/backdrop.jpg"
+}
+```
+
+**Use Case**: Perfect for Netflix-style hero sections with logo overlays on backdrop images.
+
+### 📸 Enhanced Image Collections
+
+Access multiple images for each media item:
+
+```json
+{
+  "images": {
+    "backdrops": [
+      {
+        "file_path": "/backdrop.jpg",
+        "url": "https://image.tmdb.org/t/p/original/backdrop.jpg",
+        "width": 3840,
+        "height": 2160,
+        "vote_average": 5.384
+      }
+    ],
+    "posters": [...],
+    "logos": [...]
+  }
+}
+```
+
+### 🎬 Video Collections
+
+Get all available videos (trailers, teasers, clips):
+
+```json
+{
+  "videos": [
+    {
+      "id": "5d1f9f9b9251413e8b00001f",
+      "key": "TcMBFSGVi1c",
+      "name": "Official Trailer",
+      "type": "Trailer",
+      "url": "https://www.youtube.com/watch?v=TcMBFSGVi1c",
+      "embed_url": "https://www.youtube.com/embed/TcMBFSGVi1c"
+    }
+  ]
+}
+```
+
+### 🗂️ Genre Browsing
+
+Browse content by genre with sorting and pagination:
+
+```json
+{
+  "meta": {
+    "type": "movie",
+    "genre_id": 28,
+    "page": 1,
+    "sort_by": "popularity.desc"
+  },
+  "results": [...]
+}
+```
+
+**Available Sort Options**:
+- `popularity.desc` / `popularity.asc`
+- `vote_average.desc` / `vote_average.asc`
+- `release_date.desc` / `release_date.asc`
+- `title.asc` / `title.desc`
+
+### 📺 Episode Details
+
+Complete TV show navigation:
+
+```json
+{
+  "data": {
+    "episode_number": 1,
+    "name": "Winter Is Coming",
+    "crew": {
+      "directors": [...],
+      "writers": [...]
+    },
+    "guest_stars": [
+      {
+        "name": "Jason Momoa",
+        "character": "Khal Drogo"
+      }
+    ]
+  }
+}
 ```
 
 ---
@@ -280,7 +501,7 @@ All endpoints return consistent JSON responses:
   "success": false,
   "error": "Error message",
   "request": {
-    "timestamp": "2025-02-04T12:00:00.000Z"
+    "timestamp": "2025-02-07T12:00:00.000Z"
   }
 }
 ```
@@ -307,7 +528,14 @@ export const vylaApi = {
   getPlayer: (type, id, season, episode) => {
     const params = type === 'tv' ? { s: season, e: episode } : {};
     return api.get(`/player/${type}/${id}`, { params });
-  }
+  },
+  // NEW: Genre endpoints
+  getGenres: (type) => api.get(`/genres/${type}`),
+  browseGenre: (type, genreId, page = 1, sortBy = 'popularity.desc') => 
+    api.get(`/genres/${type}/${genreId}`, { params: { page, sort_by: sortBy } }),
+  // NEW: TV endpoints
+  getSeason: (tvId, seasonNumber) => api.get(`/tv/${tvId}/season/${seasonNumber}`),
+  getEpisode: (tvId, season, episode) => api.get(`/episodes/${tvId}/${season}/${episode}`)
 };
 ```
 
@@ -337,13 +565,22 @@ class VylaAPI {
     return this.request(`/details/${type}/${id}`);
   }
 
-  getCast(id) {
-    return this.request(`/cast/${id}`);
+  // NEW: Genre methods
+  getGenres(type) {
+    return this.request(`/genres/${type}`);
   }
 
-  getPlayer(type, id, season, episode) {
-    const params = type === 'tv' ? `?s=${season}&e=${episode}` : '';
-    return this.request(`/player/${type}/${id}${params}`);
+  browseGenre(type, genreId, page = 1, sortBy = 'popularity.desc') {
+    return this.request(`/genres/${type}/${genreId}?page=${page}&sort_by=${sortBy}`);
+  }
+
+  // NEW: TV methods
+  getSeason(tvId, seasonNumber) {
+    return this.request(`/tv/${tvId}/season/${seasonNumber}`);
+  }
+
+  getEpisode(tvId, season, episode) {
+    return this.request(`/episodes/${tvId}/${season}/${episode}`);
   }
 }
 
@@ -378,26 +615,35 @@ export const useMovieDetails = (id) => {
     queryFn: () => fetch(`${API_BASE}/details/movie/${id}`).then(res => res.json())
   });
 };
-```
 
-### SWR (React/Next.js)
-
-```jsx
-import useSWR from 'swr';
-
-const API_BASE = 'https://vyla-api.vercel.app/api';
-const fetcher = (url) => fetch(url).then(res => res.json());
-
-export const useHome = () => {
-  return useSWR(`${API_BASE}/home`, fetcher);
+// NEW: Genre hooks
+export const useGenres = (type) => {
+  return useQuery({
+    queryKey: ['genres', type],
+    queryFn: () => fetch(`${API_BASE}/genres/${type}`).then(res => res.json())
+  });
 };
 
-export const useSearch = (query) => {
-  return useSWR(query ? `${API_BASE}/search?q=${query}` : null, fetcher);
+export const useGenreContent = (type, genreId, page = 1) => {
+  return useQuery({
+    queryKey: ['genre', type, genreId, page],
+    queryFn: () => fetch(`${API_BASE}/genres/${type}/${genreId}?page=${page}`).then(res => res.json())
+  });
 };
 
-export const useMovieDetails = (id) => {
-  return useSWR(`${API_BASE}/details/movie/${id}`, fetcher);
+// NEW: TV hooks
+export const useSeason = (tvId, seasonNumber) => {
+  return useQuery({
+    queryKey: ['season', tvId, seasonNumber],
+    queryFn: () => fetch(`${API_BASE}/tv/${tvId}/season/${seasonNumber}`).then(res => res.json())
+  });
+};
+
+export const useEpisode = (tvId, season, episode) => {
+  return useQuery({
+    queryKey: ['episode', tvId, season, episode],
+    queryFn: () => fetch(`${API_BASE}/episodes/${tvId}/${season}/${episode}`).then(res => res.json())
+  });
 };
 ```
 
@@ -411,74 +657,28 @@ export const useMovieDetails = (id) => {
 
 ---
 
-## Example Response Objects
+## Use Cases
 
-### Home Data
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "title": "Trending Now",
-      "layout_type": "carousel",
-      "items": [
-        {
-          "id": 299534,
-          "title": "Avengers: Endgame",
-          "poster": "https://image.tmdb.org/t/p/w342/poster.jpg",
-          "backdrop": "https://image.tmdb.org/t/p/w780/backdrop.jpg",
-          "media_type": "movie",
-          "vote_average": 8.3,
-          "release_date": "2019-04-24",
-          "details_link": "/api/details/movie/299534"
-        }
-      ]
-    }
-  ]
-}
-```
+Perfect for building:
+- **Movie/TV Streaming Platforms** - Complete with player integration
+- **Content Discovery Apps** - Browse by genre, trending, top-rated
+- **Media Recommendation Systems** - Related content suggestions
+- **Entertainment Dashboards** - Track shows, episodes, actors
+- **Mobile Apps** (React Native, Flutter) - Full API access
+- **Desktop Apps** (Electron) - Cross-platform support
+- **Browser Extensions** - Enhance streaming sites
+- **Discord Bots** - Movie/TV information commands
+- **Telegram Bots** - Media search and recommendations
 
-### Movie Details
-```json
-{
-  "success": true,
-  "info": {
-    "id": 299534,
-    "title": "Avengers: Endgame",
-    "overview": "After the devastating events...",
-    "runtime": 181,
-    "rating": 8.3,
-    "genres": [{"id": 28, "name": "Action"}],
-    "backdrop": "https://image.tmdb.org/t/p/original/backdrop.jpg",
-    "poster": "https://image.tmdb.org/t/p/w780/poster.jpg",
-    "trailer_url": "https://www.youtube.com/watch?v=..."
-  },
-  "cast": [],
-  "related": [],
-  "player_link": "/api/player/movie/299534"
-}
-```
+---
 
-### Streaming Sources
-```json
-{
-  "success": true,
-  "meta": {
-    "content_id": 299534,
-    "type": "movie"
-  },
-  "sources": [
-    {
-      "id": "pstream",
-      "name": "P-Stream",
-      "stream_url": "https://iframe.pstream.mov/media/tmdb-movie-299534",
-      "isFrench": false,
-      "needsSandbox": true,
-      "supportsEvents": true
-    }
-  ]
-}
-```
+## Performance
+
+- **Response Time**: < 500ms average
+- **Uptime**: 99.9%
+- **Rate Limits**: Fair usage
+- **Caching**: Automatic image caching (1 year)
+- **CDN**: Global edge network via Vercel
 
 ---
 
@@ -515,33 +715,32 @@ We welcome contributions from frontend and backend developers!
 
 ---
 
-## Deployment Options
+## Common Genre IDs
 
-### Vercel (Recommended)
-```bash
-vercel --prod
-```
+### Movies
+- **28**: Action
+- **12**: Adventure
+- **16**: Animation
+- **35**: Comedy
+- **80**: Crime
+- **99**: Documentary
+- **18**: Drama
+- **14**: Fantasy
+- **27**: Horror
+- **10749**: Romance
+- **878**: Science Fiction
+- **53**: Thriller
 
-### Railway
-```bash
-railway up
-```
-
-### Heroku
-```bash
-git push heroku main
-```
-
-### Docker
-```dockerfile
-FROM node:18-alpine
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-EXPOSE 3000
-CMD ["npm", "start"]
-```
+### TV Shows
+- **10759**: Action & Adventure
+- **16**: Animation
+- **35**: Comedy
+- **80**: Crime
+- **99**: Documentary
+- **18**: Drama
+- **10751**: Family
+- **9648**: Mystery
+- **10765**: Sci-Fi & Fantasy
 
 ---
 
@@ -549,33 +748,8 @@ CMD ["npm", "start"]
 
 - **Issues**: [GitHub Issues](https://github.com/endoverdosing/vyla-api/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/endoverdosing/vyla-api/discussions)
-- **API Status**: `https://vyla-api.vercel.app/api/status`
+- **API Status**: `https://vyla-api.vercel.app/api/health`
 - **Documentation**: [API_DOCS.md](./API_DOCS.md)
-
----
-
-## Use Cases
-
-Perfect for building:
-- **Movie/TV Streaming Platforms**
-- **Content Discovery Apps**
-- **Media Recommendation Systems**
-- **Entertainment Dashboards**
-- **Mobile Apps** (React Native, Flutter)
-- **Desktop Apps** (Electron)
-- **Browser Extensions**
-- **Discord Bots**
-- **Telegram Bots**
-
----
-
-## Performance
-
-- **Response Time**: < 500ms average
-- **Uptime**: 99.9%
-- **Rate Limits**: Fair usage
-- **Caching**: Automatic image caching (1 year)
-- **CDN**: Global edge network via Vercel
 
 ---
 

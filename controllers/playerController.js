@@ -28,10 +28,10 @@ const validatePlayerParams = (type, id, season, episode) => {
         const numSeason = Number(season);
         const numEpisode = Number(episode);
 
-        if (!season || isNaN(numSeason) || numSeason < 1) {
+        if (!season || isNaN(numSeason) || numSeason < 0) {
             return {
                 valid: false,
-                error: 'Season must be a positive number for TV shows',
+                error: 'Season must be a non-negative number for TV shows',
                 statusCode: 400
             };
         }
@@ -109,6 +109,15 @@ exports.getPlayerSources = (req, res) => {
     const { s, e } = req.query;
 
     logRequest('Player sources request', { type, id, season: s, episode: e });
+
+    if (type === 'tv' && (!s || !e)) {
+        return res.status(400).json({
+            success: false,
+            error: 'TV shows require season (s) and episode (e) parameters',
+            example: `/api/player/tv/${id}?s=1&e=1`,
+            received: { type, id, season: s, episode: e }
+        });
+    }
 
     const validation = validatePlayerParams(type, id, s, e);
     if (!validation.valid) {

@@ -20,6 +20,7 @@ const processMediaItems = (results, defaultType = null) => {
             return {
                 id: item.id,
                 title: item.title || item.name,
+                title_image: null,
                 overview: item.overview || null,
                 poster: getImageUrl(item.poster_path, 'w342'),
                 backdrop: getImageUrl(item.backdrop_path, 'w780'),
@@ -29,11 +30,37 @@ const processMediaItems = (results, defaultType = null) => {
                 year: (item.release_date || item.first_air_date || '').split('-')[0] || null,
                 genre_ids: item.genre_ids || [],
                 popularity: item.popularity || 0,
+                adult: item.adult || false,
+                original_language: item.original_language || null,
                 view_path: `/api/details/${mediaType}/${item.id}`,
                 details_link: `/api/details/${mediaType}/${item.id}`
             };
         })
         .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+};
+
+const fetchLogosForItems = async (items, sectionName = '') => {
+    const itemsWithLogos = await Promise.all(
+        items.map(async (item, index) => {
+            try {
+                const images = await tmdb.fetchFromTMDB(`/${item.media_type}/${item.id}/images`);
+                const logo = images?.logos?.[0]?.file_path || null;
+                const logoUrl = getImageUrl(logo, 'w500');
+
+                return {
+                    ...item,
+                    title_image: logoUrl
+                };
+            } catch (error) {
+                console.error(`[LOGO-ERROR] Failed for ${item.title}:`, error.message);
+                return item;
+            }
+        })
+    );
+
+    const withLogos = itemsWithLogos.filter(item => item.title_image !== null).length;
+
+    return itemsWithLogos;
 };
 
 const createSection = (title, items, layoutType = 'row') => ({
@@ -45,7 +72,7 @@ const createSection = (title, items, layoutType = 'row') => ({
 
 const createMetadata = (featuredImage) => ({
     timestamp: new Date().toISOString(),
-    version: '1.0.0',
+    version: '1.1.0',
     api_version: 'v1',
     title: 'Vyla - Home',
     description: 'Discover trending movies and TV shows',
@@ -82,7 +109,10 @@ const fetchAllSections = async () => {
     });
 };
 
-const buildHomeSections = (sections) => {
+const buildHomeSections = async (sections) => {
+    console.log('[HOME-DEBUG] Building home sections with FULL logo fetching...');
+    console.log('[HOME-DEBUG] WARNING: This will be slower as we fetch logos for ALL items');
+
     const [
         trending,
         trendingMovies,
@@ -98,19 +128,45 @@ const buildHomeSections = (sections) => {
         sciFiMovies
     ] = sections;
 
+    const trendingItems = processMediaItems(trending?.results, null);
+    const trendingMoviesItems = processMediaItems(trendingMovies?.results, 'movie');
+    const topRatedMoviesItems = processMediaItems(topRatedMovies?.results, 'movie');
+    const topRatedTVItems = processMediaItems(topRatedTV?.results, 'tv');
+    const netflixOriginalsItems = processMediaItems(netflixOriginals?.results, 'tv');
+    const actionMoviesItems = processMediaItems(actionMovies?.results, 'movie');
+    const comedyMoviesItems = processMediaItems(comedyMovies?.results, 'movie');
+    const horrorMoviesItems = processMediaItems(horrorMovies?.results, 'movie');
+    const romanceMoviesItems = processMediaItems(romanceMovies?.results, 'movie');
+    const documentariesItems = processMediaItems(documentaries?.results, 'movie');
+    const animationMoviesItems = processMediaItems(animationMovies?.results, 'movie');
+    const sciFiMoviesItems = processMediaItems(sciFiMovies?.results, 'movie');
+
+    const trendingWithLogos = await fetchLogosForItems(trendingItems.slice(0, 10), 'Trending Now');
+    const trendingMoviesWithLogos = await fetchLogosForItems(trendingMoviesItems.slice(0, 20), 'Trending Movies');
+    const topRatedMoviesWithLogos = await fetchLogosForItems(topRatedMoviesItems.slice(0, 20), 'Top Rated Movies');
+    const topRatedTVWithLogos = await fetchLogosForItems(topRatedTVItems.slice(0, 20), 'Top Rated TV');
+    const netflixOriginalsWithLogos = await fetchLogosForItems(netflixOriginalsItems.slice(0, 20), 'Netflix Originals');
+    const actionMoviesWithLogos = await fetchLogosForItems(actionMoviesItems.slice(0, 20), 'Action Movies');
+    const comedyMoviesWithLogos = await fetchLogosForItems(comedyMoviesItems.slice(0, 20), 'Comedy Movies');
+    const horrorMoviesWithLogos = await fetchLogosForItems(horrorMoviesItems.slice(0, 20), 'Horror Movies');
+    const romanceMoviesWithLogos = await fetchLogosForItems(romanceMoviesItems.slice(0, 20), 'Romance Movies');
+    const documentariesWithLogos = await fetchLogosForItems(documentariesItems.slice(0, 18), 'Documentaries');
+    const animationMoviesWithLogos = await fetchLogosForItems(animationMoviesItems.slice(0, 20), 'Animation');
+    const sciFiMoviesWithLogos = await fetchLogosForItems(sciFiMoviesItems.slice(0, 20), 'Science Fiction');
+
     return [
-        createSection('Trending Now', processMediaItems(trending?.results, null), 'carousel'),
-        createSection('Trending Movies', processMediaItems(trendingMovies?.results, 'movie'), 'row'),
-        createSection('Top Rated Movies', processMediaItems(topRatedMovies?.results, 'movie'), 'row'),
-        createSection('Top Rated TV Shows', processMediaItems(topRatedTV?.results, 'tv'), 'row'),
-        createSection('Netflix Originals', processMediaItems(netflixOriginals?.results, 'tv'), 'row'),
-        createSection('Action Movies', processMediaItems(actionMovies?.results, 'movie'), 'row'),
-        createSection('Comedy Movies', processMediaItems(comedyMovies?.results, 'movie'), 'row'),
-        createSection('Horror Movies', processMediaItems(horrorMovies?.results, 'movie'), 'row'),
-        createSection('Romance Movies', processMediaItems(romanceMovies?.results, 'movie'), 'row'),
-        createSection('Documentaries', processMediaItems(documentaries?.results, 'movie'), 'row'),
-        createSection('Animation', processMediaItems(animationMovies?.results, 'movie'), 'row'),
-        createSection('Science Fiction', processMediaItems(sciFiMovies?.results, 'movie'), 'row')
+        createSection('Trending Now', trendingWithLogos, 'carousel'),
+        createSection('Trending Movies', trendingMoviesWithLogos, 'row'),
+        createSection('Top Rated Movies', topRatedMoviesWithLogos, 'row'),
+        createSection('Top Rated TV Shows', topRatedTVWithLogos, 'row'),
+        createSection('Netflix Originals', netflixOriginalsWithLogos, 'row'),
+        createSection('Action Movies', actionMoviesWithLogos, 'row'),
+        createSection('Comedy Movies', comedyMoviesWithLogos, 'row'),
+        createSection('Horror Movies', horrorMoviesWithLogos, 'row'),
+        createSection('Romance Movies', romanceMoviesWithLogos, 'row'),
+        createSection('Documentaries', documentariesWithLogos, 'row'),
+        createSection('Animation', animationMoviesWithLogos, 'row'),
+        createSection('Science Fiction', sciFiMoviesWithLogos, 'row')
     ].filter(section => section.items.length > 0);
 };
 
@@ -127,9 +183,11 @@ exports.getHomeData = async (req, res) => {
     try {
         logRequest('Home data request', { url: req.originalUrl });
 
+        const startTime = Date.now();
         const sections = await fetchAllSections();
-        const data = buildHomeSections(sections);
+        const data = await buildHomeSections(sections);
         const featuredImage = getFeaturedImage(sections);
+        const endTime = Date.now();
 
         const response = {
             success: true,
@@ -137,13 +195,17 @@ exports.getHomeData = async (req, res) => {
             meta: createMetadata(featuredImage),
             stats: {
                 total_sections: data.length,
-                total_items: data.reduce((acc, section) => acc + section.item_count, 0)
+                total_items: data.reduce((acc, section) => acc + section.item_count, 0),
+                load_time_ms: endTime - startTime
             }
         };
 
+        console.log(`[HOME-DEBUG] Total load time: ${(endTime - startTime) / 1000}s`);
+
         logRequest('Home data retrieved', {
             sections: response.data.length,
-            total_items: response.stats.total_items
+            total_items: response.stats.total_items,
+            load_time: `${(endTime - startTime) / 1000}s`
         });
 
         res.json(response);

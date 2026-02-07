@@ -28,7 +28,7 @@ const validateMediaParams = (type, id) => {
     return { valid: true, type, id: numId };
 };
 
-const createMetadata = (type, details) => ({
+const createMetadata = (type, details, images) => ({
     pagination: {
         page: 1,
         total_pages: 1,
@@ -45,7 +45,12 @@ const createMetadata = (type, details) => ({
     title: details.title || details.name,
     description: details.overview || 'No description available.',
     image: getImageUrl(details.backdrop_path || details.poster_path, 'original'),
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    images: {
+        backdrops_count: images?.backdrops?.length || 0,
+        posters_count: images?.posters?.length || 0,
+        logos_count: images?.logos?.length || 0
+    }
 });
 
 const extractTrailerUrl = (videos) => {
@@ -63,6 +68,25 @@ const extractTrailerUrl = (videos) => {
     return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
 };
 
+const processVideos = (videos) => {
+    if (!videos?.results?.length) return [];
+
+    return videos.results
+        .filter(v => v.site === 'YouTube')
+        .slice(0, 10)
+        .map(v => ({
+            id: v.id,
+            key: v.key,
+            name: v.name,
+            site: v.site,
+            type: v.type,
+            official: v.official || false,
+            published_at: v.published_at,
+            url: `https://www.youtube.com/watch?v=${v.key}`,
+            embed_url: `https://www.youtube.com/embed/${v.key}`
+        }));
+};
+
 const processCast = (credits) => {
     if (!credits?.cast?.length) return [];
 
@@ -74,7 +98,8 @@ const processCast = (credits) => {
             character: person.character || 'Unknown',
             profile: getImageUrl(person.profile_path, 'w185'),
             view_cast_link: `/api/cast/${person.id}`,
-            order: person.order || 999
+            order: person.order || 999,
+            known_for_department: person.known_for_department
         }))
         .sort((a, b) => a.order - b.order);
 };
@@ -89,6 +114,7 @@ const processRecommendations = (recommendations, type) => {
             id: rec.id,
             type: rec.media_type || type,
             title: rec.title || rec.name || 'Untitled',
+            title_image: getImageUrl(rec.logo_path, 'w500'),
             overview: rec.overview || null,
             poster: getImageUrl(rec.poster_path, 'w342'),
             backdrop: getImageUrl(rec.backdrop_path, 'w780'),
@@ -102,25 +128,62 @@ const processSeasons = (details) => {
     if (!details.seasons?.length) return [];
 
     return details.seasons
-        .filter(s => s && s.season_number > 0)
+        .filter(s => s && s.season_number >= 0)
         .map(s => ({
             number: s.season_number,
             name: s.name || `Season ${s.season_number}`,
             episode_count: s.episode_count || 0,
             air_date: s.air_date || null,
             poster: getImageUrl(s.poster_path, 'w780') || getImageUrl(details.poster_path, 'w780'),
-            overview: s.overview || 'No overview available.'
+            overview: s.overview || 'No overview available.',
+            vote_average: s.vote_average || null,
+            season_link: `/api/tv/${details.id}/season/${s.season_number}`
         }))
         .sort((a, b) => a.number - b.number);
 };
 
-const buildMediaInfo = (details, type, videos) => {
+const processImages = (images) => {
+    if (!images) return null;
+
+    return {
+        backdrops: (images.backdrops || [])
+            .slice(0, 10)
+            .map(img => ({
+                file_path: img.file_path,
+                url: getImageUrl(img.file_path, 'original'),
+                width: img.width,
+                height: img.height,
+                vote_average: img.vote_average
+            })),
+        posters: (images.posters || [])
+            .slice(0, 10)
+            .map(img => ({
+                file_path: img.file_path,
+                url: getImageUrl(img.file_path, 'w780'),
+                width: img.width,
+                height: img.height,
+                vote_average: img.vote_average
+            })),
+        logos: (images.logos || [])
+            .slice(0, 5)
+            .map(img => ({
+                file_path: img.file_path,
+                url: getImageUrl(img.file_path, 'w500'),
+                width: img.width,
+                height: img.height
+            }))
+    };
+};
+
+const buildMediaInfo = (details, type, videos, images) => {
     const backdrop = details.backdrop_path || details.poster_path;
+    const titleLogo = images?.logos?.[0]?.file_path || null;
 
     const mediaInfo = {
         id: details.id,
         type,
         title: details.title || details.name,
+        title_image: getImageUrl(titleLogo, 'w500'),
         tagline: details.tagline || null,
         overview: details.overview || 'No overview available.',
         runtime: details.runtime || (details.episode_run_time?.[0] || null),
@@ -132,10 +195,14 @@ const buildMediaInfo = (details, type, videos) => {
         backdrop: getImageUrl(backdrop, 'original'),
         poster: getImageUrl(details.poster_path || details.backdrop_path, 'w780'),
         trailer_url: extractTrailerUrl(videos),
+        videos: processVideos(videos),
         homepage: details.homepage || null,
         status: details.status || null,
         original_language: details.original_language || 'en',
         original_title: details.original_title || details.original_name || null,
+        adult: details.adult || false,
+        budget: details.budget || null,
+        revenue: details.revenue || null,
         production_companies: (details.production_companies || []).map(company => ({
             id: company.id,
             name: company.name,
@@ -149,12 +216,12 @@ const buildMediaInfo = (details, type, videos) => {
     return mediaInfo;
 };
 
-const buildResponse = (type, details, credits, recommendations, videos) => {
+const buildResponse = (type, details, credits, recommendations, videos, images) => {
     const response = {
         success: true,
         view_path: `/api/details/${type}/${details.id}`,
-        meta: createMetadata(type, details),
-        info: buildMediaInfo(details, type, videos),
+        meta: createMetadata(type, details, images),
+        info: buildMediaInfo(details, type, videos, images),
         cast: processCast(credits),
         crew: {
             directors: (credits.crew || [])
@@ -178,7 +245,8 @@ const buildResponse = (type, details, credits, recommendations, videos) => {
                 }))
         },
         related: processRecommendations(recommendations, type),
-        player_link: `/api/player/${type}/${details.id}`
+        images: processImages(images),
+        player_link: type === 'movie' ? `/api/player/${type}/${details.id}` : null
     };
 
     if (type === 'tv') {
@@ -187,6 +255,14 @@ const buildResponse = (type, details, credits, recommendations, videos) => {
         response.info.number_of_episodes = details.number_of_episodes || 0;
         response.info.in_production = details.in_production || false;
         response.info.type = details.type || null;
+        response.info.last_air_date = details.last_air_date || null;
+        response.info.next_episode_to_air = details.next_episode_to_air || null;
+        response.info.networks = (details.networks || []).map(network => ({
+            id: network.id,
+            name: network.name,
+            logo: getImageUrl(network.logo_path, 'w500'),
+            origin_country: network.origin_country
+        }));
         response.info.created_by = (details.created_by || []).map(creator => ({
             id: creator.id,
             name: creator.name,
@@ -221,10 +297,11 @@ exports.getDetails = async (req, res) => {
             `/${type}/${validation.id}`,
             `/${type}/${validation.id}/credits`,
             `/${type}/${validation.id}/recommendations`,
-            `/${type}/${validation.id}/videos`
+            `/${type}/${validation.id}/videos`,
+            `/${type}/${validation.id}/images`
         ];
 
-        const [details, credits, recommendations, videos] = await Promise.all(
+        const [details, credits, recommendations, videos, images] = await Promise.all(
             endpoints.map(endpoint => fetchFromTMDB(endpoint))
         );
 
@@ -241,7 +318,7 @@ exports.getDetails = async (req, res) => {
             });
         }
 
-        const responseData = buildResponse(type, details, credits, recommendations, videos);
+        const responseData = buildResponse(type, details, credits, recommendations, videos, images);
 
         logRequest('Details retrieved', {
             id: details.id,

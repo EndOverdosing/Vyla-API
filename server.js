@@ -42,10 +42,6 @@ app.use((req, res, next) => {
         if (res.statusCode >= 400) {
             errorCount++;
         }
-
-        if (NODE_ENV === 'development') {
-            console.log(`[${req.method}] ${req.originalUrl} - ${res.statusCode} (${duration}ms)`);
-        }
     });
 
     next();
@@ -57,7 +53,7 @@ app.get('/', (req, res) => {
     res.json({
         success: true,
         name: 'Vyla Media API',
-        version: '1.0.0',
+        version: '1.1.0',
         status: 'active',
         environment: NODE_ENV,
         uptime: Math.floor((Date.now() - startTime) / 1000),
